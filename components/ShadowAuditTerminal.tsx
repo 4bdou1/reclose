@@ -142,7 +142,7 @@ const ShadowAuditTerminal: React.FC = () => {
                              <div className="flex justify-between border-b border-brand-border pb-2"><span>Growth Signal:</span> <span className="text-brand-orange">SaaS Stack Expansion</span></div>
                           </div>
                           <button className="mt-6 w-full py-3 bg-white text-black rounded-xl text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-brand-silver transition-all shadow-xl">
-                             Mount to Shadow CRM
+                             Apply to Shadow CRM
                           </button>
                        </div>
                      )}

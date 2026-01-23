@@ -114,14 +114,14 @@ const Pricing: React.FC = () => {
                   type="text" 
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder="Redemption Protocol"
+                  placeholder="PROMO CODE"
                   className="bg-transparent border-none outline-none text-white w-full text-xs font-mono py-2 uppercase placeholder:text-gray-800 tracking-widest"
                 />
                 <button 
                   onClick={handleApplyCode}
                   className="bg-brand-obsidian border border-brand-border text-brand-silver/60 hover:text-white px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-white/5"
                 >
-                  Mount
+                  APPLY
                 </button>
               </div>
               

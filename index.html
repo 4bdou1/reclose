@@ -10,7 +10,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['Outfit', 'Inter', 'sans-serif'],
               mono: ['JetBrains Mono', 'monospace'],
             },
             colors: {
@@ -72,42 +72,10 @@
       }
 
       .tactile-btn {
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        transform: perspective(1000px) translateZ(0);
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
       }
       .tactile-btn:hover {
-        transform: perspective(1000px) translateZ(20px) translateY(-2px);
-        box-shadow: 0 15px 30px rgba(255, 107, 43, 0.2);
-      }
-      .tactile-btn:active {
-        transform: perspective(1000px) translateZ(0) translateY(1px);
-      }
-
-      .holographic-silver {
-        background: linear-gradient(135deg, #fff 0%, #cbd5e1 45%, #fff 50%, #cbd5e1 55%, #94a3b8 100%);
-        background-size: 200% 200%;
-        animation: silverShimmer 5s linear infinite;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      @keyframes silverShimmer {
-        0% { background-position: 0% 50%; }
-        100% { background-position: 200% 50%; }
-      }
-
-      .bento-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        grid-auto-rows: minmax(180px, auto);
-        gap: 1.5rem;
-      }
-
-      @media (max-width: 1024px) {
-        .bento-grid { grid-template-columns: repeat(2, 1fr); }
-      }
-      @media (max-width: 640px) {
-        .bento-grid { grid-template-columns: 1fr; }
+        transform: translateY(-2px);
       }
 
       .industrial-grid {
@@ -125,7 +93,7 @@
       .animate-on-scroll {
         opacity: 0;
         transform: translateY(30px);
-        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
       }
       
       .animate-on-scroll.is-visible {
