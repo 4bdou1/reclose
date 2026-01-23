@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>reclose | DFY AI Lead Generation</title>
+    <meta name="description" content="Stop Pitching Ghosts. AI-Verified Lead Generation and Business Automation." />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              brand: {
+                dark: '#020205',
+                obsidian: '#0A0A0F',
+                surface: '#0E0E14',
+                orange: '#FF6B2B',
+                purple: '#A855F7',
+                blue: '#3B82F6',
+                silver: '#CBD5E1',
+                border: 'rgba(255, 255, 255, 0.05)',
+              }
+            },
+            backgroundImage: {
+              'gradient-flight': 'linear-gradient(135deg, #FF6B2B 0%, #F43F5E 50%, #A855F7 100%)',
+              'gradient-silver': 'linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 50%, #94A3B8 100%)',
+              'glow-radial': 'radial-gradient(circle at center, rgba(168, 85, 247, 0.1) 0%, transparent 70%)',
+            },
+            animation: {
+              'fade-in': 'fadeIn 1s ease-out forwards',
+              'slide-up': 'slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'float': 'float 6s ease-in-out infinite',
+              'glow-line': 'glowLine 3s linear infinite',
+            },
+            keyframes: {
+              fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+              slideUp: { '0%': { opacity: '0', transform: 'translateY(40px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+              float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-15px)' } },
+              glowLine: { '0%': { left: '-100%' }, '100%': { left: '100%' } }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #020205;
+        color: #ffffff;
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      .cyber-glass {
+        background: rgba(10, 10, 15, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+      }
+
+      .tactile-btn {
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transform: perspective(1000px) translateZ(0);
+      }
+      .tactile-btn:hover {
+        transform: perspective(1000px) translateZ(20px) translateY(-2px);
+        box-shadow: 0 15px 30px rgba(255, 107, 43, 0.2);
+      }
+      .tactile-btn:active {
+        transform: perspective(1000px) translateZ(0) translateY(1px);
+      }
+
+      .holographic-silver {
+        background: linear-gradient(135deg, #fff 0%, #cbd5e1 45%, #fff 50%, #cbd5e1 55%, #94a3b8 100%);
+        background-size: 200% 200%;
+        animation: silverShimmer 5s linear infinite;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      @keyframes silverShimmer {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+      }
+
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: minmax(180px, auto);
+        gap: 1.5rem;
+      }
+
+      @media (max-width: 1024px) {
+        .bento-grid { grid-template-columns: repeat(2, 1fr); }
+      }
+      @media (max-width: 640px) {
+        .bento-grid { grid-template-columns: 1fr; }
+      }
+
+      .industrial-grid {
+        background-size: 60px 60px;
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: #020205; }
+      ::-webkit-scrollbar-thumb { background: #1a1a24; border-radius: 20px; }
+      ::-webkit-scrollbar-thumb:hover { background: #FF6B2B; }
+
+      .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      
+      .animate-on-scroll.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
