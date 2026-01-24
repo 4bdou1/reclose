@@ -97,12 +97,12 @@ const AuthScreen: React.FC = () => {
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Exit Initialization
         </button>
 
-        {/* PRIMARY AUTH CARD (Like Image 1 Layout) */}
-        <div className="bg-[#0A0A0F]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-10 md:p-12 shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+        {/* PRIMARY AUTH CARD */}
+        <div className="bg-[#0A0A0F]/90 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] p-10 md:p-14 shadow-[0_40px_120px_rgba(0,0,0,0.7)]">
           {/* Branding & Header */}
           <div className="flex flex-col items-center text-center mb-10">
             <Logo size="sm" showText={true} className="mb-8" />
-            <h1 className="text-2xl font-black uppercase tracking-[0.1em] text-white mb-2">
+            <h1 className="text-3xl font-black uppercase tracking-[0.1em] text-white mb-2">
               {isLogin ? 'Welcome Back' : 'Create Your Account'}
             </h1>
             <p className="text-gray-600 text-[10px] font-mono uppercase tracking-[0.2em] italic">
@@ -117,18 +117,18 @@ const AuthScreen: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-7">
             {!isLogin && (
               <div className="space-y-6 animate-in fade-in duration-500">
                 <div>
-                  <label className="block text-[9px] uppercase tracking-[0.4em] text-gray-600 mb-2.5 font-mono font-black">Operator Name</label>
+                  <label className="block text-[9px] uppercase tracking-[0.4em] text-gray-600 mb-2.5 font-mono font-black">Operator Identity</label>
                   <input
                     type="text"
                     required
-                    placeholder="ENTER FULL IDENTITY"
+                    placeholder="ENTER FULL NAME"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:border-brand-orange/40 focus:outline-none transition-all text-sm placeholder:text-gray-800 font-mono"
+                    className="w-full bg-black/50 border border-white/5 rounded-xl p-4 text-white focus:border-brand-orange/40 focus:outline-none transition-all text-sm placeholder:text-gray-800 font-mono"
                   />
                 </div>
               </div>
@@ -142,7 +142,7 @@ const AuthScreen: React.FC = () => {
                 placeholder="ID@RECLOSE.IO"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:border-white/20 focus:outline-none transition-all text-sm placeholder:text-gray-800 font-mono shadow-inner"
+                className="w-full bg-black/50 border border-white/5 rounded-xl p-4 text-white focus:border-white/20 focus:outline-none transition-all text-sm placeholder:text-gray-800 font-mono"
               />
             </div>
 
@@ -154,7 +154,7 @@ const AuthScreen: React.FC = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white focus:border-white/20 focus:outline-none transition-all text-sm placeholder:text-gray-800 font-mono shadow-inner"
+                className="w-full bg-black/50 border border-white/5 rounded-xl p-4 text-white focus:border-white/20 focus:outline-none transition-all text-sm placeholder:text-gray-800 font-mono"
               />
             </div>
 
@@ -168,15 +168,15 @@ const AuthScreen: React.FC = () => {
                   <Loader2 className="animate-spin w-5 h-5" />
                 ) : (
                   <>
-                    <span className="uppercase tracking-[0.2em] text-[11px]">Continue</span>
-                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                    <span className="uppercase tracking-[0.25em] text-[11px]">Continue</span>
+                    <Zap className="w-4 h-4 fill-black" />
                   </>
                 )}
               </button>
             </div>
 
-            {/* Toggle Link Moved inside card per request */}
-            <div className="text-center pt-6">
+            {/* Toggle Link - Moved inside card per request */}
+            <div className="text-center pt-4">
               <button
                 type="button"
                 onClick={() => {
@@ -184,7 +184,7 @@ const AuthScreen: React.FC = () => {
                   setMemberInput('');
                   setError('');
                 }}
-                className="text-[9px] font-mono font-black uppercase text-gray-600 hover:text-white transition-all tracking-[0.3em]"
+                className="text-[9px] font-mono font-black uppercase text-gray-600 hover:text-white transition-all tracking-[0.3em] group"
               >
                 {isLogin ? "> Request New Operator Access" : "> Existing Signature Detected"}
               </button>

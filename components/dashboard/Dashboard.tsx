@@ -12,11 +12,21 @@ import {
   Instagram, Mail, MessageCircle, ArrowDownNarrowWide,
   Library, Cpu, Layers, MousePointer2, Clipboard,
   Clock, Flame, DollarSign, ShieldAlert, Workflow,
-  ShieldCheck
+  ShieldCheck, Crown
 } from 'lucide-react';
 import Logo from '../Logo';
 
 // --- SHARED COMPONENTS ---
+
+/**
+ * High-status Gold Crown Icon for HPF Executive
+ * Replaced the hooded silhouette with a premium golden crown.
+ */
+const GoldCrownIcon = () => (
+  <div className="w-full h-full flex items-center justify-center bg-[#0A0A0F] rounded-full p-2 border border-[#C5A059]/30 shadow-[inset_0_0_15px_rgba(197,160,89,0.2)]">
+    <Crown className="w-6 h-6 text-[#C5A059] fill-[#C5A059]/20" strokeWidth={1.5} />
+  </div>
+);
 
 const DashboardStatCard: React.FC<{ 
   label: string, 
@@ -902,7 +912,9 @@ const Dashboard: React.FC = () => {
       {/* Precision Top Navigation */}
       <header className="h-[72px] border-b border-white/[0.04] flex items-center justify-between px-10 bg-[#07090D] z-50">
         <div className="flex items-center gap-12">
-          <Logo size="sm" showText={true} className="scale-75 origin-left" />
+          <a href="#" onClick={(e) => { e.preventDefault(); setActiveDashboardModule('COMMAND'); }} className="flex items-center group">
+            <Logo size="sm" showText={true} className="scale-75 origin-left" />
+          </a>
           <nav className="hidden lg:flex items-center gap-1">
             {[
               { id: 'COMMAND', label: 'Command', icon: Activity },
@@ -935,8 +947,12 @@ const Dashboard: React.FC = () => {
               <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest leading-none mb-1">Welcome back,</div>
               <div className="text-[12px] font-bold text-brand-blue uppercase tracking-tight">{user?.name || "Alex Reynolds"}</div>
             </div>
-            <div className="w-10 h-10 rounded-full border border-white/[0.08] bg-[#161922] flex items-center justify-center overflow-hidden">
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Alex'}`} alt="User" />
+            <div className="w-10 h-10 rounded-full border border-white/[0.08] bg-[#000000] flex items-center justify-center overflow-hidden relative">
+              {user?.name === 'HPF Executive' ? (
+                <GoldCrownIcon />
+              ) : (
+                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Alex'}`} alt="User" className="w-full h-full object-cover" />
+              )}
             </div>
             <button onClick={logout} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-600">
                <LogOut className="w-4 h-4" />
