@@ -46,9 +46,13 @@ const About: React.FC = () => {
 
           <div className="relative">
             <Reveal delay={300} width="100%">
-              <div className="relative aspect-square max-w-md mx-auto">
-                 <div className="absolute inset-0 border border-brand-border rounded-full animate-spin-slow"></div>
-                 <div className="absolute inset-4 border border-brand-border/30 rounded-full animate-spin-slow-reverse"></div>
+              <div className="relative aspect-square max-w-md mx-auto [perspective:1000px]">
+                 {/* Outer Circle - High Visibility with standard linear rotation */}
+                 <div className="absolute inset-0 border border-brand-border rounded-full animate-spin-slow [transform-style:preserve-3d]"></div>
+                 
+                 {/* Inner Circle - Brighter with Vertical Y-Axis Rotation */}
+                 <div className="absolute inset-4 border border-brand-border rounded-full animate-spin-y [transform-style:preserve-3d]"></div>
+                 
                  <div className="absolute inset-0 bg-gradient-radial from-brand-purple/20 to-transparent blur-2xl"></div>
                  
                  <div className="absolute inset-0 flex items-center justify-center">
@@ -70,6 +74,23 @@ const About: React.FC = () => {
 
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin-y {
+          from { transform: rotateY(0deg); }
+          to { transform: rotateY(360deg); }
+        }
+        @keyframes spin-standard {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-y {
+          animation: spin-y 8s linear infinite;
+        }
+        .animate-spin-slow {
+          animation: spin-standard 15s linear infinite;
+        }
+      `}</style>
     </section>
   );
 };

@@ -50,7 +50,7 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 industrial-grid opacity-[0.08] pointer-events-none"></div>
 
       {/* THE ORBITAL SYSTEM */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-6xl max-h-[800px] pointer-events-none flex items-center justify-center">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-6xl max-h-[800px] pointer-events-none flex items-center justify-center z-30">
         <div className={`absolute w-[600px] h-[600px] border border-brand-silver/[0.15] rounded-full transition-all duration-[600ms] cubic-bezier-reclose ${isOpen ? 'scale-150 opacity-0' : 'opacity-100'}`}></div>
         <div className={`absolute w-[850px] h-[850px] border border-brand-silver/[0.1] rounded-full transition-all duration-[600ms] cubic-bezier-reclose ${isOpen ? 'scale-110 opacity-5' : 'opacity-100'}`}></div>
         
@@ -154,7 +154,7 @@ const Hero: React.FC = () => {
           </Reveal>
 
           <Reveal delay={100}>
-            <h1 className="text-5xl md:text-6xl lg:text-8xl font-semibold tracking-tight mb-12 leading-[1.05] max-w-6xl text-white font-sans">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tight mb-12 leading-[1.1] max-w-5xl text-white font-sans">
               <span className="font-light opacity-80">Command Your Market With</span> <span className="text-brand-orange italic font-bold">REclose</span> <br className="hidden md:block" />
               And Secure <span className="text-brand-silver font-bold">10+ High-Status Sales Meetings</span> <br className="hidden md:block" />
               Every Month on <span className="italic font-light text-brand-silver/50">Autopilot.</span>
