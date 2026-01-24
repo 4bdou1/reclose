@@ -14,6 +14,7 @@ import Footer from './components/Footer.tsx';
 import AuthScreen from './components/auth/AuthScreen.tsx';
 import Dashboard from './components/dashboard/Dashboard.tsx';
 import AIArchitect from './components/AIArchitect.tsx';
+import TheReceptionist from './components/TheReceptionist.tsx';
 
 const MainContent: React.FC = () => {
   const { view } = useAppContext();
@@ -29,6 +30,10 @@ const MainContent: React.FC = () => {
         <AIArchitect />
       </>
     );
+  }
+
+  if (view === 'receptionist') {
+    return <TheReceptionist />;
   }
 
   return (

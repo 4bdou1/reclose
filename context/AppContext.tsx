@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole, ShadowAuditResult } from '../lib/types';
 
-type View = 'landing' | 'auth' | 'dashboard';
+type View = 'landing' | 'auth' | 'dashboard' | 'receptionist';
 export type DashboardModule = 'COMMAND' | 'VAULT' | 'PLANNING' | 'OUTREACH' | 'LIBRARY' | 'REVENUE';
 
 interface AppContextType {
