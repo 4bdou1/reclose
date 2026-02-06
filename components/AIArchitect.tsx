@@ -122,7 +122,9 @@ const MessageBubble: React.FC<{ message: { role: 'user' | 'assistant', content: 
 };
 
 const AIArchitect: React.FC = () => {
-  const { user, view, latestAudit } = useAppContext();
+  const { user } = useAuth();
+  const view = 'dashboard';
+  const latestAudit: ShadowAuditResult | null = null;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([
     {role: 'assistant', content: "[TRANSMISSION_SYNC: OK // ROLE_INITIALIZING]\n\nGreetings, Operator. I have established a secure link to your session infrastructure.\n\n[RECALL_STATUS]: ACTIVE\n\nI am currently monitoring your current workspace. Are we optimizing the recent ShadowAudit results or architecting a new scale multiplier?\n\n» Analyze Recent Signals\n» Generate Custom Scripts\n» Scale Infrastructure"}
