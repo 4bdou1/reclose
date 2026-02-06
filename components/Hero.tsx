@@ -1,8 +1,8 @@
 
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, X, Sparkles } from 'lucide-react';
 import Reveal from './Reveal.tsx';
-import { useAppContext } from '../context/AppContext.tsx';
 
 /**
  * High-status Keyhole-Chat logo accurately reconstructed from the reference image.
