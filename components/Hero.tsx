@@ -170,7 +170,7 @@ const Hero: React.FC = () => {
           <Reveal delay={500}>
             <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto items-center">
               <button
-                onClick={() => setView('auth')}
+                onClick={() => navigate('/auth')}
                 className="tactile-btn group relative px-14 py-7 bg-white text-black rounded-2xl font-bold text-lg flex items-center gap-5 overflow-hidden shadow-[0_25px_70px_-15px_rgba(255,255,255,0.15)] active:scale-95"
               >
                 <span className="relative z-10 uppercase tracking-[0.2em]">Initialize Command</span>
