@@ -1,8 +1,11 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Crosshair, Layers, Workflow, Eye, ShieldCheck, Zap } from 'lucide-react';
 import Reveal from './Reveal';
-import { useAppContext, DashboardModule } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+
+type DashboardModule = 'COMMAND' | 'VAULT' | 'PLANNING' | 'OUTREACH' | 'LIBRARY' | 'REVENUE';
 
 const BenefitCard: React.FC<{
   title: string;
@@ -10,14 +13,14 @@ const BenefitCard: React.FC<{
   icon: React.ReactNode;
   targetModule: DashboardModule;
 }> = ({ title, desc, icon, targetModule }) => {
-  const { user, setView, setActiveDashboardModule } = useAppContext();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleInteraction = () => {
-    setActiveDashboardModule(targetModule);
     if (user) {
-      setView('dashboard');
+      navigate('/dashboard');
     } else {
-      setView('auth');
+      navigate('/auth');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
