@@ -1,11 +1,10 @@
-
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Reveal from './Reveal';
-import { useAppContext } from '../context/AppContext';
 
 const CTA: React.FC = () => {
-  const { setView } = useAppContext();
+  const navigate = useNavigate();
 
   return (
     <section id="cta" className="py-32 relative text-center px-4">
@@ -24,7 +23,7 @@ const CTA: React.FC = () => {
             
             <div className="flex flex-col items-center">
                 <button 
-                  onClick={() => setView('auth')}
+                  onClick={() => navigate('/auth')}
                   className="group relative px-10 py-5 bg-white text-black rounded-full font-bold text-xl flex items-center gap-3 overflow-hidden transition-transform hover:scale-105"
                 >
                   <span className="relative z-10">Access Agent Protocol</span>
