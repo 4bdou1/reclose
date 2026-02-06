@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, Activity, BrainCircuit,
   Fingerprint, Database, Lock, RefreshCw, LogOut
 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { ShadowAuditResult } from '../lib/types';
 
 /**
