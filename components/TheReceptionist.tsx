@@ -1,11 +1,11 @@
 
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, MessageCircle, Calendar, 
   Bell, Zap, User, Target, Cpu, 
   ShieldCheck, ArrowRight, Award, Crown, Shield, Check
 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext.tsx';
 import Reveal from './Reveal.tsx';
 
 /**
