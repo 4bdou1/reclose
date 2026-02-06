@@ -22,7 +22,7 @@ const KeyholeLogo = ({ className = "" }: { className?: string }) => (
 );
 
 const Hero: React.FC = () => {
-  const { setView } = useAppContext();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
