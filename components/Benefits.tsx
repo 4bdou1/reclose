@@ -65,7 +65,7 @@ const BenefitCard: React.FC<{
 };
 
 const Benefits: React.FC = () => {
-  const { setView } = useAppContext();
+  const navigate = useNavigate();
   
   const benefits = [
     {
