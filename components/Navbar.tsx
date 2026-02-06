@@ -1,13 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, X, ArrowRight } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 
 const Navbar: React.FC = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { setView, user } = useAppContext();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,18 +27,19 @@ const Navbar: React.FC = () => {
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
     const targetId = href.replace('#', '');
-    
-    // Ensure we are on the landing page view
-    setView('landing');
-    
-    // Use a small timeout to allow view state to reconcile if we were on auth/dashboard
-    setTimeout(() => {
-      const element = document.getElementById(targetId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-    
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleAuthClick = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
     setIsMobileMenuOpen(false);
   };
 
@@ -49,7 +51,15 @@ const Navbar: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
         {/* Logo */}
-        <a href="#" onClick={(e) => { e.preventDefault(); setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center group">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="flex items-center group"
+        >
           <Logo size="sm" className="scale-75 origin-left" />
         </a>
 
@@ -68,7 +78,8 @@ const Navbar: React.FC = () => {
             ))}
           </div>
           <button
-            onClick={() => setView(user ? 'dashboard' : 'auth')}
+            data-testid="nav-auth-btn"
+            onClick={handleAuthClick}
             className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors shadow-[0_4px_20px_rgba(255,255,255,0.1)] uppercase tracking-wider"
           >
             {user ? 'Dashboard' : 'Login'} <ArrowRight className="w-4 h-4" />
@@ -98,13 +109,10 @@ const Navbar: React.FC = () => {
             </a>
           ))}
           <button
-            onClick={() => {
-              setView(user ? 'dashboard' : 'auth');
-              setIsMobileMenuOpen(false);
-            }}
+            onClick={handleAuthClick}
             className="mt-4 flex items-center justify-center gap-2 bg-white text-black px-5 py-3 rounded-full text-sm font-bold uppercase tracking-widest"
           >
-             {user ? 'Dashboard' : 'Access System'} <ArrowRight className="w-4 h-4" />
+            {user ? 'Dashboard' : 'Access System'} <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       )}
