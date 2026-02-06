@@ -41,7 +41,7 @@ const Hero: React.FC = () => {
 
   const handleViewOperative = () => {
     setIsOpen(false);
-    setView('receptionist');
+    navigate('/receptionist');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
