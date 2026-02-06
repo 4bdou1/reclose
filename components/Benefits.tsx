@@ -135,7 +135,7 @@ const Benefits: React.FC = () => {
           {/* Custom CTA Box */}
           <Reveal delay={500} width="100%">
             <div 
-              onClick={() => setView('auth')}
+              onClick={() => navigate('/auth')}
               className="p-8 rounded-[2rem] bg-gradient-to-br from-brand-orange/10 to-brand-purple/10 border border-brand-orange/20 flex flex-col justify-center items-center text-center group cursor-pointer h-full transition-all hover:scale-105 hover:border-brand-orange/50 shadow-lg hover:shadow-brand-orange/20"
             >
               <Zap className="w-12 h-12 text-brand-orange mb-6 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500" />
