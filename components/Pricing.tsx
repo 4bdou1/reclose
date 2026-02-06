@@ -76,10 +76,10 @@ const PricingCard: React.FC<{
 const Pricing: React.FC = () => {
   const { setView, setSelectedTier, isDiscountActive, setIsDiscountActive } = useAppContext();
   const [promoCode, setPromoCode] = useState('');
-  const DISCOUNT_RATE = 0.35;
+  const DISCOUNT_RATE = 0.5;
 
   const handleApplyCode = () => {
-    if (promoCode.toUpperCase() === 'HPF01') {
+    if (promoCode.toUpperCase() === 'HPF00101') {
       setIsDiscountActive(true);
     } else {
       setIsDiscountActive(false);
@@ -128,7 +128,7 @@ const Pricing: React.FC = () => {
               {isDiscountActive && (
                 <div className="mt-4 text-[10px] font-mono text-brand-orange animate-in slide-in-from-top-2 flex items-center justify-center gap-3 italic tracking-widest uppercase">
                   <Zap className="w-4 h-4 fill-brand-orange" />
-                  [PROTOCOL HPF01 ACTIVE] // 35% REDUCTION SECURED
+                  [PROTOCOL HPF00101 ACTIVE] // 1 MO FREE + 50% OFF SECURED
                 </div>
               )}
             </div>

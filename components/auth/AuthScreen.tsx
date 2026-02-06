@@ -53,7 +53,7 @@ const AuthScreen: React.FC = () => {
   };
 
   const handleApplyPromo = () => {
-    if (promoInput.toUpperCase() === 'HPF01') {
+    if (promoInput.toUpperCase() === 'HPF00101') {
       setIsDiscountActive(true);
       setError('');
     } else {
