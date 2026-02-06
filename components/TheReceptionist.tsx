@@ -115,7 +115,7 @@ const PricingCard: React.FC<{ title: string, price: string, description: string,
 );
 
 const TheReceptionist: React.FC = () => {
-  const { setView } = useAppContext();
+  const navigate = useNavigate();
   const paths = { p1: "M100,100 L200,100", p2: "M300,100 L400,100", p3: "M500,100 C 580,100 580,40 680,40", p4: "M500,100 C 580,100 580,160 680,160", p5: "M780,40 C 850,40 850,100 920,100", p6: "M780,160 C 850,160 850,100 920,100" };
 
   return (
@@ -128,7 +128,7 @@ const TheReceptionist: React.FC = () => {
       </div>
       <div className="fixed inset-0 industrial-grid opacity-[0.03] pointer-events-none z-1"></div>
       <nav className="fixed top-0 left-0 right-0 z-[100] p-10 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
-        <button onClick={() => setView('landing')} className="flex items-center gap-3 text-white/30 hover:text-white transition-all font-mono text-[10px] uppercase tracking-[0.5em] font-black group">
+        <button onClick={() => navigate('/')} className="flex items-center gap-3 text-white/30 hover:text-white transition-all font-mono text-[10px] uppercase tracking-[0.5em] font-black group">
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1.5 transition-transform" /> EXIT_PROXIMITY
         </button>
         <div className="flex items-center gap-4">
