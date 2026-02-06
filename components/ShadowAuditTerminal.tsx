@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import { Search, Terminal, Loader2, CheckCircle, Zap, ShieldAlert, Cpu, Database } from 'lucide-react';
 import Reveal from './Reveal';
-import { useAppContext } from '../context/AppContext';
 
 const ShadowAuditTerminal: React.FC = () => {
-  const { setLatestAudit } = useAppContext();
   const [domain, setDomain] = useState('');
   const [status, setStatus] = useState<'idle' | 'scanning' | 'results'>('idle');
   const [logs, setLogs] = useState<string[]>([]);
@@ -28,20 +26,6 @@ const ShadowAuditTerminal: React.FC = () => {
       await new Promise(r => setTimeout(r, 600));
       setLogs(prev => [...prev, step]);
     }
-    
-    // Store in context for AI Architect awareness
-    setLatestAudit({
-      id: Math.random().toString(36).substr(2, 9),
-      domain: domain,
-      intentScore: 92,
-      growthSignals: ['Enterprise Sales Hiring', 'Salesforce Integration', 'SaaS Stack Expansion'],
-      decisionMaker: {
-        name: 'Marcus Sterling',
-        email: 'm.sterling@' + domain,
-        linkedin: 'linkedin.com/in/msterling'
-      },
-      timestamp: new Date().toISOString()
-    });
     
     setStatus('results');
   };
