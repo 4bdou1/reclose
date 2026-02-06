@@ -8,6 +8,11 @@ import Auth from './pages/Auth';
 import Overview from './pages/Overview';
 import Leads from './pages/Leads';
 import Settings from './pages/Settings';
+import Inbox from './pages/Inbox';
+import KnowledgeBase from './pages/KnowledgeBase';
+import Integrations from './pages/Integrations';
+import CalendarPage from './pages/Calendar';
+import Projects from './pages/Projects';
 
 // Components
 import DashboardLayout from './components/dashboard/DashboardLayout';
@@ -99,6 +104,11 @@ const AppRoutes: React.FC = () => {
       >
         <Route index element={<Overview />} />
         <Route path="leads" element={<Leads />} />
+        <Route path="inbox" element={<Inbox />} />
+        <Route path="calendar" element={<CalendarPage />} />
+        <Route path="projects" element={<Projects />} />
+        <Route path="knowledge" element={<KnowledgeBase />} />
+        <Route path="integrations" element={<Integrations />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 
