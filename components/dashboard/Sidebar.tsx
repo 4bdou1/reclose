@@ -46,7 +46,7 @@ const Sidebar: React.FC = () => {
               {item.name}
             </button>
           );
-        })})
+        })}
       </nav>
 
       {/* User Section */}
