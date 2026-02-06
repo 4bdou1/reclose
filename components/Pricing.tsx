@@ -74,8 +74,9 @@ const PricingCard: React.FC<{
 );
 
 const Pricing: React.FC = () => {
-  const { setView, setSelectedTier, isDiscountActive, setIsDiscountActive } = useAppContext();
+  const navigate = useNavigate();
   const [promoCode, setPromoCode] = useState('');
+  const [isDiscountActive, setIsDiscountActive] = useState(false);
   const DISCOUNT_RATE = 0.5;
 
   const handleApplyCode = () => {
@@ -91,10 +92,7 @@ const Pricing: React.FC = () => {
   };
 
   const handleSelectTier = (tier: UserRole) => {
-    setSelectedTier(tier);
-    setView('auth');
-    const event = new CustomEvent('auth_view_mode', { detail: 'register' });
-    window.dispatchEvent(event);
+    navigate('/auth');
   };
 
   return (
