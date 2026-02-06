@@ -1,41 +1,52 @@
-
 import React from 'react';
-import { AppProvider, useAppContext } from './context/AppContext.tsx';
-import Navbar from './components/Navbar.tsx';
-import Hero from './components/Hero.tsx';
-import About from './components/About.tsx';
-import Services from './components/Services.tsx';
-import LuxuryTicker from './components/LuxuryTicker.tsx';
-import Benefits from './components/Benefits.tsx';
-import ShadowAuditTerminal from './components/ShadowAuditTerminal.tsx';
-import Pricing from './components/Pricing.tsx';
-import CTA from './components/CTA.tsx';
-import Footer from './components/Footer.tsx';
-import AuthScreen from './components/auth/AuthScreen.tsx';
-import Dashboard from './components/dashboard/Dashboard.tsx';
-import AIArchitect from './components/AIArchitect.tsx';
-import TheReceptionist from './components/TheReceptionist.tsx';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Toaster } from 'sonner';
 
-const MainContent: React.FC = () => {
-  const { view } = useAppContext();
+// Pages
+import Auth from './pages/Auth';
+import Overview from './pages/Overview';
+import Leads from './pages/Leads';
+import Settings from './pages/Settings';
 
-  if (view === 'auth') {
-    return <AuthScreen />;
-  }
+// Components
+import DashboardLayout from './components/dashboard/DashboardLayout';
 
-  if (view === 'dashboard') {
+// Landing Page Components
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import About from './components/About';
+import Services from './components/Services';
+import LuxuryTicker from './components/LuxuryTicker';
+import Benefits from './components/Benefits';
+import ShadowAuditTerminal from './components/ShadowAuditTerminal';
+import Pricing from './components/Pricing';
+import CTA from './components/CTA';
+import Footer from './components/Footer';
+import AIArchitect from './components/AIArchitect';
+import TheReceptionist from './components/TheReceptionist';
+
+// Protected Route Component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
     return (
-      <>
-        <Dashboard />
-        <AIArchitect />
-      </>
+      <div className="min-h-screen bg-[#020205] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[#C5A059] border-t-transparent rounded-full animate-spin" />
+      </div>
     );
   }
 
-  if (view === 'receptionist') {
-    return <TheReceptionist />;
+  if (!user) {
+    return <Navigate to="/auth" replace />;
   }
 
+  return <>{children}</>;
+};
+
+// Landing Page Component
+const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-brand-dark text-white font-sans selection:bg-brand-orange selection:text-white overflow-x-hidden industrial-grid">
       <Navbar />
@@ -55,11 +66,65 @@ const MainContent: React.FC = () => {
   );
 };
 
+// Main App Component with Routes
+const AppRoutes: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#020205] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[#C5A059] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/auth"
+        element={user ? <Navigate to="/dashboard" replace /> : <Auth />}
+      />
+      <Route path="/receptionist" element={<TheReceptionist />} />
+
+      {/* Protected Dashboard Routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Overview />} />
+        <Route path="leads" element={<Leads />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
+
+      {/* Catch all redirect */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};
+
 const App: React.FC = () => {
   return (
-    <AppProvider>
-      <MainContent />
-    </AppProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#0A0A0A',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: '#fff',
+            },
+          }}
+        />
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 
