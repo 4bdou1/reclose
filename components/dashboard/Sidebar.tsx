@@ -1,12 +1,20 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Settings, LogOut, Phone } from 'lucide-react';
+import { 
+  LayoutDashboard, Users, Inbox, BookOpen, Plug, Settings, 
+  LogOut, Calendar, BarChart3 
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../Logo';
 
 const navItems = [
   { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Leads', path: '/dashboard/leads', icon: Users },
+  { name: 'Inbox', path: '/dashboard/inbox', icon: Inbox, badge: true },
+  { name: 'Calendar', path: '/dashboard/calendar', icon: Calendar },
+  { name: 'Projects', path: '/dashboard/projects', icon: BarChart3 },
+  { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: BookOpen },
+  { name: 'Integrations', path: '/dashboard/integrations', icon: Plug },
   { name: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
@@ -28,22 +36,28 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || 
+            (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
           return (
             <button
               key={item.path}
-              data-testid={`nav-${item.name.toLowerCase()}`}
+              data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/20'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-[#C5A059]' : ''}`} />
-              {item.name}
+              <div className="flex items-center gap-3">
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-[#C5A059]' : ''}`} />
+                {item.name}
+              </div>
+              {item.badge && (
+                <span className="w-2 h-2 rounded-full bg-[#FF6B2B] animate-pulse" />
+              )}
             </button>
           );
         })}
