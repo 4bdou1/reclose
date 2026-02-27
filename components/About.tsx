@@ -1,96 +1,107 @@
 
-import React from 'react';
-import Reveal from './Reveal';
+import React, { useRef } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const About: React.FC = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const scrollWrapperRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!sectionRef.current || !scrollWrapperRef.current) return;
+
+    // Pin the entire section so it stays fixed in the viewport while we scrub the animation
+    ScrollTrigger.create({
+      trigger: sectionRef.current,
+      start: 'top top',
+      end: '+=400%', // Adjust this for longer/shorter scrolling felt duration
+      pin: true,
+      animation: gsap.to(scrollWrapperRef.current, {
+        yPercent: -80, // Translates the massive track upwards
+        ease: 'none',
+      }),
+      scrub: 1, // Smooth dragging physics
+    });
+  }, { scope: sectionRef });
+
   return (
-    <section id="about" className="py-24 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-brand-purple/5 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+    <section id="about" ref={sectionRef} className="h-screen w-full relative bg-[#A67B5B] overflow-hidden">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          
-          <div>
-            <Reveal>
-              <div className="flex items-center gap-3 mb-6">
-                <span className="w-12 h-[1px] bg-brand-orange"></span>
-                <span className="font-mono text-brand-orange uppercase tracking-widest text-sm">Shadow Operator Protocol</span>
-              </div>
-              
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                Lead generation for the <span className="text-brand-purple italic">Shadow Era</span>.
-              </h2>
-              
-              <p className="text-gray-400 text-lg leading-relaxed mb-6">
-                <span className="text-white font-semibold">reclose</span> isn't another scraper. We are a "Done-For-You" AI agency that replaces cold, dead data with absolute verification. Our agents ghost-visit websites, detect hiring surges, and identify real decision-makers.
-              </p>
-              
-              <p className="text-gray-400 text-lg leading-relaxed">
-                We've reimagined business operations to eliminate friction. Stop chasing ghosts and start closing companies that are actively trying to grow.
-              </p>
-            </Reveal>
+      {/* Slide 0: ABOUT US intro */}
+      <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center p-8 sm:p-16 z-0 bg-[#A67B5B]">
+        <div className="max-w-5xl w-full flex flex-col items-center text-center space-y-8 text-white font-inter">
+          <div className="font-tech uppercase tracking-[0.4em] text-xs sm:text-[14px] mb-4 text-white/50">
+            ABOUT US
+          </div>
+          <p className="text-[28px] sm:text-[45px] lg:text-[60px] leading-[1.2] tracking-tight font-thin">
+            REclose is built on a simple, powerful premise: You should be the one who trains your AI. We've moved beyond simple "chatting." With REclose, you are building a digital extension of your own knowledge.
+          </p>
+        </div>
+      </div>
 
-            <Reveal delay={200}>
-              <div className="mt-10 grid grid-cols-2 gap-8 border-t border-brand-border pt-8">
-                 <div>
-                   <div className="text-3xl font-mono font-bold text-white mb-1">94%</div>
-                   <div className="text-sm text-gray-500 uppercase tracking-wider">Close Probability</div>
-                 </div>
-                 <div>
-                   <div className="text-3xl font-mono font-bold text-white mb-1">0ms</div>
-                   <div className="text-sm text-gray-500 uppercase tracking-wider">Friction</div>
-                 </div>
-              </div>
-            </Reveal>
+      {/* Slide 1: The Master Overlay that naturally sits below and then we pull the *contents* up */}
+      <div className="absolute top-0 left-0 w-full h-full z-10 flex justify-center items-end pb-12 pointer-events-none">
+        {/* Sparkle Decoration - bottom right */}
+        <div className="absolute bottom-8 right-8 sm:bottom-12 sm:right-12 z-50">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C12 7.52285 16.4772 12 22 12C16.4772 12 12 16.4772 12 22C12 16.4772 7.52285 12 2 12C7.52285 12 12 7.52285 12 2Z" fill="#E8DCD1" opacity="0.6" />
+          </svg>
+        </div>
+      </div>
+
+      {/* The massive hidden track that we slide upwards via GSAP */}
+      <div
+        ref={scrollWrapperRef}
+        className="absolute top-full left-0 w-full flex flex-col items-center bg-[#A67B5B] shadow-[0_-30px_60px_rgba(0,0,0,0.15)] z-20 rounded-t-[3rem] lg:rounded-t-[4rem] min-h-[400vh]"
+      >
+        <div className="max-w-5xl w-full flex flex-col gap-[70vh] text-center px-6 sm:px-12 lg:px-24 py-[40vh] pb-[100vh]">
+
+          {/* Point 1: CUSTOM TRAINING ENGINE */}
+          <div className="flex flex-col items-center gap-4 sm:gap-6">
+            <div className="uppercase tracking-[0.25em] text-[12px] sm:text-[14px] text-white font-light opacity-90">
+              CUSTOM TRAINING ENGINE
+            </div>
+            <p className="text-[26px] sm:text-[34px] lg:text-[44px] xl:text-[48px] leading-[1.25] tracking-tight font-[200] text-white w-full">
+              You don't just 'talk' to REclose; you cultivate a digital extension of your own knowledge by training it on your specific documents and codebases.
+            </p>
           </div>
 
-          <div className="relative">
-            <Reveal delay={300} width="100%">
-              <div className="relative aspect-square max-w-md mx-auto [perspective:1000px]">
-                 {/* Outer Circle - High Visibility with standard linear rotation */}
-                 <div className="absolute inset-0 border border-brand-border rounded-full animate-spin-slow [transform-style:preserve-3d]"></div>
-                 
-                 {/* Inner Circle - Brighter with Vertical Y-Axis Rotation */}
-                 <div className="absolute inset-4 border border-brand-border rounded-full animate-spin-y [transform-style:preserve-3d]"></div>
-                 
-                 <div className="absolute inset-0 bg-gradient-radial from-brand-purple/20 to-transparent blur-2xl"></div>
-                 
-                 <div className="absolute inset-0 flex items-center justify-center">
-                   <div className="w-48 h-48 bg-black border border-brand-border rounded-lg flex items-center justify-center relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-flight opacity-10 group-hover:opacity-20 transition-opacity"></div>
-                      <div className="text-center relative z-10">
-                        <div className="text-4xl font-bold mb-1">OS</div>
-                        <div className="text-[10px] font-mono text-brand-orange tracking-widest">ARCHITECT CORE</div>
-                      </div>
-                      <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-brand-orange"></div>
-                      <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-brand-orange"></div>
-                      <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-brand-orange"></div>
-                      <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-brand-orange"></div>
-                   </div>
-                 </div>
-              </div>
-            </Reveal>
+          {/* Point 2: CONTEXTUAL GROUNDING */}
+          <div className="flex flex-col items-center gap-4 sm:gap-6">
+            <div className="uppercase tracking-[0.25em] text-[12px] sm:text-[14px] text-white font-light opacity-90">
+              CONTEXTUAL GROUNDING
+            </div>
+            <p className="text-[26px] sm:text-[34px] lg:text-[44px] xl:text-[48px] leading-[1.25] tracking-tight font-[200] text-white w-full">
+              By grounding the AI in your unique data, the system eliminates the 'fluff' and hallucinations common in generic models, ensuring every answer is factually accurate to your business.
+            </p>
+          </div>
+
+          {/* Point 3: ADAPTIVE INTELLIGENCE */}
+          <div className="flex flex-col items-center gap-4 sm:gap-6">
+            <div className="uppercase tracking-[0.25em] text-[12px] sm:text-[14px] text-white font-light opacity-90">
+              ADAPTIVE INTELLIGENCE
+            </div>
+            <p className="text-[26px] sm:text-[34px] lg:text-[44px] xl:text-[48px] leading-[1.25] tracking-tight font-[200] text-white w-full">
+              The system doesn't stay static; it learns from every interaction, becoming more efficient and aligned with your specific goals over time.
+            </p>
+          </div>
+
+          {/* Point 4: SOVEREIGN DATA ARCHITECTURE */}
+          <div className="flex flex-col items-center gap-4 sm:gap-6">
+            <div className="uppercase tracking-[0.25em] text-[12px] sm:text-[14px] text-white font-light opacity-90">
+              SOVEREIGN DATA ARCHITECTURE
+            </div>
+            <p className="text-[26px] sm:text-[34px] lg:text-[44px] xl:text-[48px] leading-[1.25] tracking-tight font-[200] text-white w-full">
+              Your training data is yours alone; REclose is built with a privacy-first approach to ensure you retain full ownership of the intelligence you build.
+            </p>
           </div>
 
         </div>
       </div>
 
-      <style>{`
-        @keyframes spin-y {
-          from { transform: rotateY(0deg); }
-          to { transform: rotateY(360deg); }
-        }
-        @keyframes spin-standard {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-y {
-          animation: spin-y 8s linear infinite;
-        }
-        .animate-spin-slow {
-          animation: spin-standard 15s linear infinite;
-        }
-      `}</style>
     </section>
   );
 };

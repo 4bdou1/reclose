@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, Calendar, Clock, Power, TrendingUp, 
+import {
+  Users, Calendar, Clock, Power, TrendingUp,
   MessageSquare, Zap, Wifi, WifiOff, Phone, Globe, Instagram
 } from 'lucide-react';
 import { supabase, Lead, Activity, Integration, Meeting } from '../lib/supabase';
@@ -187,15 +187,14 @@ const Overview: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight font-[Manrope]">Command Center</h1>
-          <p className="text-gray-500 mt-1">Your AI receptionist operating system</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight font-[Manrope] drop-shadow-md">Command Center</h1>
+          <p className="text-gray-400 mt-1 font-medium">Your AI receptionist operating system</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
-            isAiActive
-              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-              : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-          }`}>
+          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${isAiActive
+            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+            : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+            }`}>
             <span className={`w-2 h-2 rounded-full ${isAiActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
             System {isAiActive ? 'Online' : 'Offline'}
           </span>
@@ -205,7 +204,7 @@ const Overview: React.FC = () => {
       {/* Stats Grid - 3 Columns */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Leads */}
-        <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-[#C5A059]/30 transition-all duration-300">
+        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 relative overflow-hidden group hover:border-[#C5A059]/40 hover:bg-[#1C1C1E]/80 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="absolute inset-0 bg-gradient-to-br from-[#C5A059]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
@@ -221,7 +220,7 @@ const Overview: React.FC = () => {
         </div>
 
         {/* Meetings Booked (ROI) */}
-        <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-blue-500/30 transition-all duration-300">
+        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 relative overflow-hidden group hover:border-blue-500/40 hover:bg-[#1C1C1E]/80 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
@@ -236,7 +235,7 @@ const Overview: React.FC = () => {
         </div>
 
         {/* Time Saved */}
-        <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 relative overflow-hidden group hover:border-purple-500/40 hover:bg-[#1C1C1E]/80 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
@@ -254,16 +253,15 @@ const Overview: React.FC = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* AI Status Card */}
-        <div className="lg:col-span-2 backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-6">
+        <div className="lg:col-span-2 backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-[#1C1C1E]/80">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-xs font-medium uppercase tracking-widest text-gray-500">AI Receptionist Status</span>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  isAiActive
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                    : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${isAiActive
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                  }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isAiActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
                   {isAiActive ? 'Online' : 'Offline'}
                 </span>
@@ -279,16 +277,14 @@ const Overview: React.FC = () => {
             <button
               data-testid="ai-status-toggle"
               onClick={toggleAiStatus}
-              className={`relative w-16 h-9 rounded-full transition-all duration-300 ${
-                isAiActive
-                  ? 'bg-[#C5A059] shadow-[0_0_20px_rgba(197,160,89,0.4)]'
-                  : 'bg-gray-700'
-              }`}
+              className={`relative w-16 h-9 rounded-full transition-all duration-300 ${isAiActive
+                ? 'bg-[#C5A059] shadow-[0_0_20px_rgba(197,160,89,0.4)]'
+                : 'bg-gray-700'
+                }`}
             >
               <span
-                className={`absolute top-1 left-1 w-7 h-7 rounded-full bg-white shadow-lg transform transition-transform duration-300 flex items-center justify-center ${
-                  isAiActive ? 'translate-x-7' : 'translate-x-0'
-                }`}
+                className={`absolute top-1 left-1 w-7 h-7 rounded-full bg-white shadow-lg transform transition-transform duration-300 flex items-center justify-center ${isAiActive ? 'translate-x-7' : 'translate-x-0'
+                  }`}
               >
                 <Power className={`w-4 h-4 ${isAiActive ? 'text-[#C5A059]' : 'text-gray-400'}`} />
               </span>
@@ -297,7 +293,7 @@ const Overview: React.FC = () => {
         </div>
 
         {/* Service Status Card */}
-        <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-6">
+        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-[#1C1C1E]/80">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-medium uppercase tracking-widest text-gray-500">Service Status</span>
             <Wifi className="w-4 h-4 text-gray-500" />
@@ -306,9 +302,8 @@ const Overview: React.FC = () => {
             {displayIntegrations.map((integration: any) => (
               <div key={integration.type} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    integration.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-500'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${integration.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-500'
+                    }`}>
                     {getIntegrationIcon(integration.type)}
                   </div>
                   <span className="text-sm text-white">{integration.name || integration.type}</span>
@@ -325,7 +320,7 @@ const Overview: React.FC = () => {
       </div>
 
       {/* Live Activity Feed */}
-      <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl overflow-hidden">
+      <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-[#1C1C1E]/80">
         <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -333,7 +328,7 @@ const Overview: React.FC = () => {
           </div>
           <span className="text-xs text-gray-500 uppercase tracking-widest">Real-time</span>
         </div>
-        
+
         {activities.length === 0 ? (
           <div className="p-12 text-center">
             <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />

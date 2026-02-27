@@ -24,11 +24,9 @@ import About from './components/About';
 import Services from './components/Services';
 import LuxuryTicker from './components/LuxuryTicker';
 import Benefits from './components/Benefits';
-import ShadowAuditTerminal from './components/ShadowAuditTerminal';
 import Pricing from './components/Pricing';
 import CTA from './components/CTA';
 import Footer from './components/Footer';
-import AIArchitect from './components/AIArchitect';
 import TheReceptionist from './components/TheReceptionist';
 
 // Protected Route Component
@@ -53,11 +51,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Landing Page Component
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-brand-dark text-white font-sans selection:bg-brand-orange selection:text-white overflow-x-hidden industrial-grid">
+    <div className="min-h-screen bg-[#FDFDFD] text-[#020205] font-sans selection:bg-brand-orange selection:text-white overflow-x-hidden animate-in fade-in duration-1000 delay-[500ms] fill-mode-backwards">
       <Navbar />
       <main className="relative z-10">
         <Hero />
-        <ShadowAuditTerminal />
         <About />
         <Services />
         <LuxuryTicker />
@@ -66,7 +63,6 @@ const LandingPage: React.FC = () => {
         <CTA />
       </main>
       <Footer />
-      <AIArchitect />
     </div>
   );
 };

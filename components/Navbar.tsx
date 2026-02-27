@@ -44,12 +44,21 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent ${
-        isScrolled ? 'cyber-glass py-3 border-brand-border' : 'bg-transparent py-6'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+    <nav id="global-navbar" className="fixed top-0 left-0 right-0 z-50 transition-all duration-700 pointer-events-none">
+
+      {/* Sleek Scrolled Tab Toggle */}
+      <div className={`absolute left-1/2 -translate-x-1/2 top-0 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.08)] rounded-b-2xl overflow-hidden ${isScrolled ? 'translate-y-0' : '-translate-y-[150%]'}`}>
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="bg-white/95 backdrop-blur-md px-10 pt-2 pb-4 flex flex-col justify-center items-center gap-[5px] hover:bg-white transition-colors group"
+        >
+          <div className="w-6 h-[1.5px] bg-[#171827] group-hover:scale-x-110 transition-transform origin-center"></div>
+          <div className="w-6 h-[1.5px] bg-[#171827] group-hover:scale-x-110 transition-transform origin-center delay-75"></div>
+        </button>
+      </div>
+
+      {/* Main Full Navbar */}
+      <div className={`max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center relative transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] pointer-events-auto ${isScrolled ? 'opacity-0 -translate-y-12 invisible' : 'opacity-100 translate-y-0 visible'}`}>
         {/* Logo */}
         <a
           href="#"
@@ -58,37 +67,51 @@ const Navbar: React.FC = () => {
             navigate('/');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="flex items-center group"
+          className="flex items-center group z-10"
         >
-          <Logo size="sm" className="scale-75 origin-left" />
+          <Logo size="sm" className="scale-75 origin-left" theme="light" />
         </a>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <div className="flex items-center gap-6 bg-brand-surface/50 px-6 py-2 rounded-full border border-brand-border">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
-                className="text-sm font-medium text-gray-400 hover:text-white transition-colors uppercase tracking-widest"
-              >
-                {link.name}
-              </a>
-            ))}
-          </div>
+        {/* Decorative Line (Desktop Only) */}
+        <div className="hidden lg:flex absolute top-1/2 -translate-y-[0.5px] left-[150px] right-[150px] pointer-events-none items-start z-0 opacity-80">
+          <div className="flex-grow h-[1px] bg-slate-300"></div>
+          <svg width="44" height="24" viewBox="0 0 44 24" className="flex-shrink-0 -ml-[1px]">
+            <path d="M0,0.5 L12,23.5 L44,23.5" stroke="currentColor" strokeWidth="1" fill="none" className="text-slate-300" />
+          </svg>
+          <div className="w-[320px] h-[1px] bg-slate-300 mt-[23px] -ml-[1px] -mr-[1px] shrink-0"></div>
+          <svg width="44" height="24" viewBox="0 0 44 24" className="flex-shrink-0 -mr-[1px]">
+            <path d="M0,23.5 L32,23.5 L44,0.5" stroke="currentColor" strokeWidth="1" fill="none" className="text-slate-300" />
+          </svg>
+          <div className="flex-grow h-[1px] bg-slate-300"></div>
+        </div>
+
+        {/* Center Desktop Nav */}
+        <div className="hidden md:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] items-center gap-10 z-10">
+          {navLinks.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              className="text-[10px] font-bold text-slate-800 hover:text-[#A67B5B] transition-colors uppercase tracking-[0.2em] font-tech cursor-pointer"
+            >
+              {link.name}
+            </a>
+          ))}
+        </div>
+
+        {/* Right Desktop Nav */}
+        <div className="hidden md:flex items-center z-10">
           <button
             data-testid="nav-auth-btn"
             onClick={handleAuthClick}
-            className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors shadow-[0_4px_20px_rgba(255,255,255,0.1)] uppercase tracking-wider"
+            className="group relative px-6 py-2.5 bg-[#171827] text-white rounded-full font-bold text-[11px] flex items-center justify-center border border-white/10 hover:shadow-[0_0_20px_rgba(0,0,0,0.1)] transition-all"
           >
-            {user ? 'Dashboard' : 'Login'} <ArrowRight className="w-4 h-4" />
+            <span className="relative z-10 font-sans tracking-[0.05em]">{user ? 'Dashboard' : 'Get started'}</span>
           </button>
         </div>
 
-        {/* Mobile Toggle */}
+        {/* Mobile Toggle (Original) */}
         <button
-          className="md:hidden text-gray-300 hover:text-white p-2"
+          className="md:hidden text-slate-600 hover:text-slate-900 p-2"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X /> : <Menu />}
@@ -97,12 +120,11 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden cyber-glass absolute top-full left-0 right-0 border-b border-brand-border p-6 flex flex-col gap-4 animate-in slide-in-from-top-4">
+        <div className="pointer-events-auto md:hidden bg-white/95 backdrop-blur-md absolute top-full left-0 right-0 border-b border-slate-200 p-6 flex flex-col gap-4 animate-in slide-in-from-top-4 shadow-xl">
           {navLinks.map((link) => (
             <a
               key={link.name}
-              href={link.href}
-              className="text-lg font-medium text-gray-300 hover:text-white uppercase tracking-widest py-2"
+              className="text-lg font-bold text-slate-600 hover:text-slate-900 uppercase tracking-[0.2em] font-tech py-2"
               onClick={(e) => handleNavClick(e, link.href)}
             >
               {link.name}
@@ -110,7 +132,7 @@ const Navbar: React.FC = () => {
           ))}
           <button
             onClick={handleAuthClick}
-            className="mt-4 flex items-center justify-center gap-2 bg-white text-black px-5 py-3 rounded-full text-sm font-bold uppercase tracking-widest"
+            className="mt-4 flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-4 rounded-full text-xs font-bold uppercase tracking-[0.2em] font-tech"
           >
             {user ? 'Dashboard' : 'Access System'} <ArrowRight className="w-4 h-4" />
           </button>
