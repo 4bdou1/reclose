@@ -222,7 +222,12 @@ const Hero: React.FC = () => {
       </div>
 
       {/* SLEEK SCROLL INDICATOR */}
-      <div className={`hidden md:flex absolute right-6 lg:right-10 top-[35%] -translate-y-1/2 flex-col items-center justify-center gap-[4.5rem] z-40 transition-opacity duration-700 ${receptionistState !== 'idle' || isExpanded ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto hover:opacity-70'}`}>
+      <div
+        className={`hidden md:flex absolute right-6 lg:right-10 top-[35%] -translate-y-1/2 flex-col items-center justify-center gap-[4.5rem] z-40 transition-opacity duration-700 pointer-events-none`}
+        style={{
+          opacity: (receptionistState !== 'idle' || isExpanded || scrollY > 50) ? 0 : 1
+        }}
+      >
         <span className="text-[9px] font-tech font-bold uppercase tracking-[0.3em] text-[#171827] rotate-90 origin-center whitespace-nowrap cursor-default">
           Scroll
         </span>
@@ -271,6 +276,10 @@ const Hero: React.FC = () => {
                 <div
                   onClick={handleLineClick}
                   className="cursor-pointer group flex flex-col absolute top-0 left-0 z-50 pointer-events-auto"
+                  style={{
+                    transform: `translateX(-${Math.min(100, scrollY * 0.25)}vw)`,
+                    opacity: Math.max(0, 1 - (scrollY * 0.003))
+                  }}
                 >
                   <div className={`flex items-center gap-1 mb-2 text-[10px] font-bold font-tech uppercase text-[#171827] tracking-widest transition-opacity duration-300 ${isExpanded ? 'opacity-0 h-0 hidden' : 'opacity-100'}`}>
                     <span className="mr-1">READ MORE</span>
