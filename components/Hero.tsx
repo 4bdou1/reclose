@@ -63,7 +63,7 @@ const Hero: React.FC = () => {
   const navigate = useNavigate();
   const [receptionistState, setReceptionistState] = useState<'idle' | 'bouncingUp' | 'draggingDown'>('idle');
   const cardRef = useRef<HTMLDivElement>(null);
-
+  const [isHovered, setIsHovered] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
@@ -172,6 +172,20 @@ const Hero: React.FC = () => {
             pointer-events: none !important;
           }
         ` : ''}
+
+        @keyframes heatWavePulse {
+          0% {
+            transform: scale(1);
+            opacity: 0.7;
+          }
+          50% {
+            opacity: 0.3;
+          }
+          100% {
+            transform: scale(2.2);
+            opacity: 0;
+          }
+        }
       `}</style>
 
       {/* PARALLAX CURTAIN EFFECT (ACTUAL DASHBOARD DRAGGED DOWN) */}
@@ -212,9 +226,46 @@ const Hero: React.FC = () => {
           <div
             className={`relative cursor-pointer group p-2 sm:p-4 mt-[-4px] ${getAgentClass()}`}
             onClick={handleInitiateReceptionist}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
-            <div className="absolute inset-0 bg-[#C5A059]/15 blur-2xl rounded-full group-hover:bg-[#C5A059]/40 transition-all duration-700 scale-[2.0]"></div>
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-[#171827] backdrop-blur-3xl rounded-full border border-slate-700/50 p-2 sm:p-2.5 shadow-[0_0_50px_rgba(197,160,89,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_80px_rgba(197,160,89,0.5)] group-hover:border-[#C5A059]/60 transition-all duration-500">
+            {/* HEAT WAVE RINGS */}
+            <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="absolute rounded-full border border-[#C5A059]/40"
+                  style={{
+                    width: `${110 + i * 28}%`,
+                    height: `${110 + i * 28}%`,
+                    animation: `heatWavePulse ${1.2 + i * 0.35}s ease-out infinite`,
+                    animationDelay: `${i * 0.25}s`,
+                    filter: `blur(${i * 0.5}px)`,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* TORCH GLOW CONE (light beaming downward) */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                bottom: '-120px', left: '50%',
+                transform: 'translateX(-50%)',
+                width: '200px', height: '140px',
+                background: isHovered
+                  ? 'conic-gradient(from 260deg at 50% 0%, transparent 0%, rgba(197,160,89,0.18) 20%, rgba(255,220,120,0.12) 30%, rgba(197,160,89,0.18) 40%, transparent 60%)'
+                  : 'none',
+                filter: 'blur(8px)',
+                transition: 'opacity 400ms ease',
+                opacity: isHovered ? 1 : 0
+              }}
+            />
+
+            <div className={`relative w-16 h-16 sm:w-20 sm:h-20 bg-[#171827] backdrop-blur-3xl rounded-full border transition-all duration-500 ${isHovered
+              ? 'border-[#C5A059]/70 shadow-[0_0_40px_rgba(197,160,89,0.6),0_-4px_20px_rgba(255,220,100,0.4)] scale-110'
+              : 'border-slate-700/50 shadow-[0_0_50px_rgba(197,160,89,0.15)]'
+              } p-2 sm:p-2.5`}>
               <KeyholeLogo className="w-full h-full" />
             </div>
           </div>
@@ -243,19 +294,29 @@ const Hero: React.FC = () => {
           className="absolute top-[8%] flex flex-row items-center justify-start w-max tracking-[-0.08em] whitespace-nowrap will-change-transform pl-[10%] xl:pl-[15%]"
         >
           <span
-            className="text-[17vw] xl:text-[16vw] font-black font-sans uppercase leading-none bg-clip-text text-transparent bg-gradient-to-b from-[#C0C5CE] via-[#E8EBEF] to-[#FDFDFD] opacity-100"
+            className="text-[17vw] xl:text-[16vw] font-black font-sans uppercase leading-none bg-clip-text text-transparent opacity-100"
             style={{
               transform: 'scaleY(2.3)',
               transformOrigin: 'top',
+              backgroundImage: isHovered
+                ? 'radial-gradient(ellipse 30vw 60vh at 78% 55%, #8a7a6a 0%, #C0C5CE 30%, #E8EBEF 55%, #FDFDFD 100%)'
+                : 'linear-gradient(to bottom, #C0C5CE, #E8EBEF, #FDFDFD)',
+              filter: isHovered ? 'drop-shadow(-8px 12px 25px rgba(0,0,0,0.18))' : 'none',
+              transition: 'background-image 600ms ease, filter 600ms ease'
             }}
           >
             Sales Engine
           </span>
           <span
-            className="ml-[15vw] text-[17vw] xl:text-[16vw] font-black font-sans uppercase leading-none bg-clip-text text-transparent bg-gradient-to-b from-[#C0C5CE] via-[#E8EBEF] to-[#FDFDFD]"
+            className="ml-[15vw] text-[17vw] xl:text-[16vw] font-black font-sans uppercase leading-none bg-clip-text text-transparent"
             style={{
               transform: 'scaleY(2.3)',
               transformOrigin: 'top',
+              backgroundImage: isHovered
+                ? 'radial-gradient(ellipse 40vw 60vh at 78% 55%, #e8c97a 0%, #C5A059 15%, #C0C5CE 40%, #E8EBEF 60%, #FDFDFD 100%)'
+                : 'linear-gradient(to bottom, #C0C5CE, #E8EBEF, #FDFDFD)',
+              filter: isHovered ? 'drop-shadow(-4px 16px 30px rgba(0,0,0,0.22))' : 'none',
+              transition: 'background-image 600ms ease, filter 600ms ease'
             }}
           >
             FREEDOM
