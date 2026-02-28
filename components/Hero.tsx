@@ -276,12 +276,12 @@ const Hero: React.FC = () => {
                 <div
                   onClick={handleLineClick}
                   className="cursor-pointer group flex flex-col absolute top-0 left-0 z-50 pointer-events-auto"
-                  style={{
-                    transform: `translateX(-${Math.min(100, scrollY * 0.25)}vw)`,
-                    opacity: Math.max(0, 1 - (scrollY * 0.003))
-                  }}
                 >
-                  <div className={`flex items-center gap-1 mb-2 text-[10px] font-bold font-tech uppercase text-[#171827] tracking-widest transition-opacity duration-300 ${isExpanded ? 'opacity-0 h-0 hidden' : 'opacity-100'}`}>
+                  {/* READ MORE TEXT & ARROWS */}
+                  <div
+                    className={`flex items-center gap-1 mb-2 text-[10px] font-bold font-tech uppercase text-[#171827] tracking-widest transition-opacity duration-300 ${isExpanded ? 'opacity-0 h-0 hidden' : ''}`}
+                    style={{ opacity: isExpanded ? 0 : Math.max(0, 1 - (scrollY * 0.005)) }}
+                  >
                     <span className="mr-1">READ MORE</span>
                     <div className="flex">
                       <span className="text-[#A67B5B] animate-[appear_1.5s_infinite_0s]">&gt;</span>
@@ -289,7 +289,27 @@ const Hero: React.FC = () => {
                       <span className="text-[#A67B5B] animate-[appear_1.5s_infinite_0.4s]">&gt;</span>
                     </div>
                   </div>
-                  <div className={`bg-[#A67B5B] shadow-[0_0_15px_rgba(166,123,91,0.4)] transition-all duration-[1000ms] ease-[cubic-bezier(0.25,1,0.5,1)] origin-top ${isExpanded ? 'w-1.5 h-[320px] lg:h-[350px]' : 'w-20 h-1.5'}`}></div>
+
+                  {/* THE BREAKING GOLD LINE */}
+                  <div className="relative flex">
+                    {/* Left Half (Acts as the full vertical line when expanded) */}
+                    <div
+                      className={`bg-[#A67B5B] shadow-[0_0_15px_rgba(166,123,91,0.4)] transition-all duration-[1000ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isExpanded ? 'origin-top w-1.5 h-[320px] lg:h-[350px]' : 'origin-right w-10 h-1.5'}`}
+                      style={{
+                        transform: (!isExpanded && scrollY > 0) ? `translate(${-scrollY * 0.15}px, ${scrollY * 0.25}px) rotate(${-scrollY * 0.15}deg)` : '',
+                        opacity: (!isExpanded && scrollY > 0) ? Math.max(0, 1 - (scrollY * 0.0025)) : 1
+                      }}
+                    ></div>
+
+                    {/* Right Half (Disappears entirely when expanded to let the Left Half take the full form) */}
+                    <div
+                      className={`bg-[#A67B5B] shadow-[0_0_15px_rgba(166,123,91,0.4)] transition-all duration-[1000ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isExpanded ? 'origin-top w-0 h-0 opacity-0' : 'origin-left w-10 h-1.5'}`}
+                      style={{
+                        transform: (!isExpanded && scrollY > 0) ? `translate(${scrollY * 0.15}px, ${scrollY * 0.25}px) rotate(${scrollY * 0.15}deg)` : '',
+                        opacity: (!isExpanded && scrollY > 0) ? Math.max(0, 1 - (scrollY * 0.0025)) : 1
+                      }}
+                    ></div>
+                  </div>
 
                   {/* EXPANDED CONTENT REVEAL */}
                   <div className={`absolute -top-12 lg:-top-16 left-10 sm:left-16 w-[350px] sm:w-[500px] lg:w-[850px] xl:w-[950px] flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-14 font-rounded text-[#171827] transition-all duration-[1200ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isExpanded ? 'opacity-100 translate-x-0 pointer-events-auto delay-500' : 'opacity-0 translate-x-12 pointer-events-none'}`}>
