@@ -98,20 +98,17 @@ const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Right Desktop Nav — Clean Apple Glass CTA */}
+        {/* Right Desktop Nav — Orange Pulse CTA */}
         <div className="hidden md:flex items-center z-10">
           <button
             data-testid="nav-auth-btn"
             onClick={handleAuthClick}
-            className="group relative px-5 py-2 rounded-full text-[11px] font-medium tracking-[0.08em] text-[#171827] flex items-center justify-center transition-all duration-300 hover:bg-black/[0.04]"
-            style={{
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              background: 'rgba(0,0,0,0.04)',
-              border: '1px solid rgba(0,0,0,0.10)',
-            }}
+            className="group relative px-6 py-[9px] rounded-full text-[11px] font-bold tracking-[0.05em] text-white bg-brand-orange flex items-center justify-center transition-all duration-300 shadow-[0_8px_25px_-5px_rgba(255,107,43,0.6)] hover:shadow-[0_12px_35px_-5px_rgba(255,107,43,0.8)] hover:-translate-y-[1px]"
           >
-            {user ? 'Dashboard' : 'Get started'}
+            {/* Expandable pulse ring on hover */}
+            <span className="absolute inset-0 rounded-full bg-brand-orange opacity-0 group-hover:animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
+
+            <span className="relative z-10">{user ? 'Dashboard' : 'Get started'}</span>
           </button>
         </div>
 

@@ -404,11 +404,14 @@ const Hero: React.FC = () => {
 
                 </div>
 
-                <h1 className="text-[12vw] sm:text-6xl md:text-7xl lg:text-[5.5rem] xl:text-[6.5rem] font-bold tracking-tight mb-8 lg:mb-12 leading-[0.95] text-[#171827] font-tech uppercase whitespace-nowrap">
+                <h1
+                  className="text-[10vw] sm:text-6xl md:text-7xl lg:text-[5rem] xl:text-[6rem] mb-8 lg:mb-12 leading-[0.95] text-[#171827] font-elite uppercase whitespace-nowrap"
+                  style={{ fontWeight: 400, letterSpacing: '0.08em', WebkitFontSmoothing: 'antialiased' }}
+                >
                   <div className={`transition-all duration-[1000ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isExpanded ? '-translate-x-[150%] opacity-0' : 'translate-x-0 opacity-100'}`}>
                     <FallingLetters text="ELITE" scrollY={scrollY} offset={0} speed={0.4} />
                   </div>
-                  <div className={`flex items-end transition-all duration-[1000ms] ease-[cubic-bezier(0.25,1,0.5,1)] delay-[100ms] ${isExpanded ? 'translate-x-[150%] opacity-0' : 'translate-x-0 opacity-100'}`}>
+                  <div className={`flex items-end mt-3 transition-all duration-[1000ms] ease-[cubic-bezier(0.25,1,0.5,1)] delay-[100ms] ${isExpanded ? 'translate-x-[150%] opacity-0' : 'translate-x-0 opacity-100'}`}>
                     <FallingLetters text="CLOSURE" scrollY={scrollY} offset={60} speed={0.4} />
                     <span
                       className="flex flex-col text-slate-800 leading-[1.3] font-sans uppercase tracking-[0.05em] text-[10px] md:text-[12px] lg:text-[14px] font-medium whitespace-nowrap text-left mb-3 lg:mb-[14px] ml-4 md:ml-6 transition-transform duration-[50ms] ease-out"
