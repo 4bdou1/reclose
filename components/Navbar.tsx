@@ -98,14 +98,20 @@ const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Right Desktop Nav */}
+        {/* Right Desktop Nav — Clean Apple Glass CTA */}
         <div className="hidden md:flex items-center z-10">
           <button
             data-testid="nav-auth-btn"
             onClick={handleAuthClick}
-            className="group relative px-6 py-2.5 bg-[#171827] text-white rounded-full font-bold text-[11px] flex items-center justify-center border border-white/10 hover:shadow-[0_0_20px_rgba(0,0,0,0.1)] transition-all"
+            className="group relative px-5 py-2 rounded-full text-[11px] font-medium tracking-[0.08em] text-[#171827] flex items-center justify-center transition-all duration-300 hover:bg-black/[0.04]"
+            style={{
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              background: 'rgba(0,0,0,0.04)',
+              border: '1px solid rgba(0,0,0,0.10)',
+            }}
           >
-            <span className="relative z-10 font-sans tracking-[0.05em]">{user ? 'Dashboard' : 'Get started'}</span>
+            {user ? 'Dashboard' : 'Get started'}
           </button>
         </div>
 
