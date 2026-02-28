@@ -28,7 +28,7 @@ const About: React.FC = () => {
   }, { scope: sectionRef });
 
   return (
-    <section id="about" ref={sectionRef} className="h-screen w-full relative bg-[#A67B5B] overflow-hidden">
+    <section id="about" ref={sectionRef} className="h-screen w-full relative z-20 bg-[#A67B5B] overflow-hidden">
 
       {/* Slide 0: ABOUT US intro */}
       <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center p-8 sm:p-16 z-0 bg-[#A67B5B]">
