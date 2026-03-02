@@ -9,6 +9,7 @@ import { ArrowRight, X, Sparkles } from 'lucide-react';
 import Spline from '@splinetool/react-spline';
 import Reveal from './Reveal.tsx';
 import TheReceptionist from './TheReceptionist';
+import DottedSurface from './DottedSurface';
 
 /**
  * High-status Keyhole-Chat logo accurately reconstructed from the reference image.
@@ -162,6 +163,8 @@ const Hero: React.FC = () => {
 
   return (
     <section ref={sectionRef} className="relative min-h-screen flex items-center pt-32 pb-24 overflow-hidden bg-transparent z-10">
+      {/* 3D DOTTED SURFACE WATER FLOW BACKGROUND */}
+      <DottedSurface />
       <div className="absolute inset-0 pointer-events-none"></div>
 
       {/* DYNAMICALLY HIDE GLOBAL NAVBAR DURING DRAG SEQUENCE */}
