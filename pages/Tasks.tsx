@@ -21,10 +21,12 @@ const Tasks: React.FC = () => {
   const [newTaskInput, setNewTaskInput] = useState('');
   const [parsedPreview, setParsedPreview] = useState<ParsedTask | null>(null);
 
-  const filteredTasks = tasks.filter(t => 
-    t.task?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    t.user?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTasks = tasks.filter(t => {
+    const taskName = t.task || '';
+    const taskUser = t.user || '';
+    return taskName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           taskUser.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {

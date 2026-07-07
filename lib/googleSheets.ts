@@ -62,7 +62,8 @@ function parseSheetData<T>(values: any[][]): T[] {
   return rows.map(row => {
     const obj: any = {};
     headers.forEach((header: string, index: number) => {
-      obj[header] = row[index] || '';
+      const key = header.toLowerCase().trim().replace(/ /g, '_');
+      obj[key] = row[index] || '';
     });
     return obj as T;
   });
