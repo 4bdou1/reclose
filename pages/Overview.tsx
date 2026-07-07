@@ -1,49 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { CheckCircle2, FileText, Microscope, RefreshCw, ChevronRight, Activity as ActivityIcon } from 'lucide-react';
-import { googleSheets, Goal, Activity, Task } from '../lib/googleSheets';
+import { googleSheetsAPI } from '../lib/googleSheets';
+import { useSheetsData } from '../hooks/useSheetsData';
 
 const Overview: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [goal, setGoal] = useState<Goal | null>(null);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [deadlines, setDeadlines] = useState<Task[]>([]);
+  const { data: goalsData, loading: goalsLoading } = useSheetsData(googleSheetsAPI.getGoals);
+  const { data: activityData, loading: activityLoading } = useSheetsData(googleSheetsAPI.getActivity);
+  const { data: tasksData, loading: tasksLoading } = useSheetsData(googleSheetsAPI.getTasks);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [goalsData, activityData, tasksData] = await Promise.all([
-          googleSheets.getGoals(),
-          googleSheets.getActivity(),
-          googleSheets.getTasks()
-        ]);
-
-        if (goalsData && goalsData.length > 0) {
-          setGoal(goalsData[0]);
-        }
-        
-        if (activityData) {
-          setActivities(activityData.slice(0, 4)); // Get latest 4 activities
-        }
-
-        if (tasksData) {
-          // Filter out completed tasks and sort by deadline closest to today
-          const upcoming = tasksData
-            .filter(t => t.status !== 'Completed' && t.deadline)
-            .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-            .slice(0, 3);
-          setDeadlines(upcoming);
-        }
-
-      } catch (error) {
-        console.error("Error fetching overview data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const loading = goalsLoading || activityLoading || tasksLoading;
+  
+  const goal = goalsData && goalsData.length > 0 ? goalsData[0] : null;
+  const activities = activityData ? activityData.slice(0, 4) : [];
+  
+  const deadlines = tasksData 
+    ? tasksData
+        .filter(t => t.status !== 'Completed' && t.deadline)
+        .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+        .slice(0, 3)
+    : [];
 
   const calculateDaysLeft = (targetDate: string) => {
     if (!targetDate) return 0;

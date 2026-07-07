@@ -1,27 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { LayoutGrid, List, Search } from 'lucide-react';
-import { googleSheets, Task } from '../lib/googleSheets';
+import React, { useState } from 'react';
+import { LayoutGrid, List, Search, Plus, Loader2 } from 'lucide-react';
+import { googleSheetsAPI, Task } from '../lib/googleSheets';
+import { useSheetsData } from '../hooks/useSheetsData';
+import { useGoogleAuth } from '../context/GoogleAuthContext';
+import { toast } from 'sonner';
 
 const Tasks: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { data: tasks, loading, refetch } = useSheetsData(googleSheetsAPI.getTasks);
+  const { spreadsheetId, accessToken } = useGoogleAuth();
+  
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      try {
-        const data = await googleSheets.getTasks();
-        setTasks(data || []);
-      } catch (error) {
-        console.error("Error fetching tasks", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTasks();
-  }, []);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newTaskName, setNewTaskName] = useState('');
 
   const filteredTasks = tasks.filter(t => 
     t.task?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -44,6 +35,43 @@ const Tasks: React.FC = () => {
       case 'medium': return 'text-yellow-600 font-semibold';
       case 'low': return 'text-gray-500 font-medium';
       default: return 'text-gray-600';
+    }
+  };
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskName.trim() || !spreadsheetId || !accessToken) return;
+    
+    setIsAdding(true);
+    try {
+      // Row schema: id, task, owner, role, status, priority, deadline, progress, category, last_updated, notes
+      const newRow = [
+        crypto.randomUUID(),
+        newTaskName,
+        'Current User',
+        'Team Member',
+        'Not Started',
+        'Medium',
+        new Date().toISOString().split('T')[0],
+        '0',
+        'General',
+        new Date().toISOString().split('T')[0],
+        ''
+      ];
+      
+      const success = await googleSheetsAPI.addTask(newRow, spreadsheetId, accessToken);
+      if (success) {
+        toast.success('Task added to Google Sheets!');
+        setNewTaskName('');
+        refetch(); // Reload the data
+      } else {
+        toast.error('Failed to add task');
+      }
+    } catch (err) {
+      toast.error('Error adding task');
+      console.error(err);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -82,6 +110,26 @@ const Tasks: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Quick Add Task */}
+      <form onSubmit={handleAddTask} className="premium-card p-4 flex gap-3 items-center">
+        <input 
+          type="text"
+          placeholder="New task name..."
+          value={newTaskName}
+          onChange={(e) => setNewTaskName(e.target.value)}
+          className="flex-1 bg-transparent border-none focus:outline-none text-sm placeholder:text-gray-400"
+          disabled={isAdding}
+        />
+        <button 
+          type="submit"
+          disabled={isAdding || !newTaskName.trim()}
+          className="px-4 py-2 bg-[#050505] disabled:bg-gray-300 text-white text-sm font-semibold rounded-lg flex items-center gap-2"
+        >
+          {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          Add Task
+        </button>
+      </form>
 
       {loading ? (
         <div className="w-full h-64 bg-gray-200 rounded-3xl animate-pulse" />

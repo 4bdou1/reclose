@@ -1,88 +1,112 @@
 import React, { useState } from 'react';
-import { Save, Lock, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Settings as SettingsIcon, Link2, Key, Database, RefreshCw } from 'lucide-react';
+import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { toast } from 'sonner';
-import { useAuth } from '../context/AuthContext';
 
 const Settings: React.FC = () => {
-  const { user } = useAuth();
-  const [newPassword, setNewPassword] = useState('');
-  const [saving, setSaving] = useState(false);
+  const { isAuthenticated, login, logout, spreadsheetId, setSpreadsheetId } = useGoogleAuth();
+  const [sheetIdInput, setSheetIdInput] = useState(spreadsheetId || '');
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPassword || newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+  const handleSaveSheetId = () => {
+    if (!sheetIdInput.trim()) {
+      toast.error('Spreadsheet ID cannot be empty');
       return;
     }
-
-    setSaving(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-      toast.success('Password updated successfully');
-      setNewPassword('');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update password');
-    } finally {
-      setSaving(false);
+    
+    // Extract ID if user pasted full URL
+    let finalId = sheetIdInput.trim();
+    if (finalId.includes('/d/')) {
+      const match = finalId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        finalId = match[1];
+        setSheetIdInput(finalId);
+      }
     }
+
+    setSpreadsheetId(finalId);
+    toast.success('Spreadsheet connected successfully');
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-1">Settings</h1>
-        <p className="text-sm text-gray-500">Manage your admin account</p>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-gray-100 rounded-xl">
+          <SettingsIcon className="w-5 h-5 text-[#050505]" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight leading-none">Database Settings</h1>
+          <p className="text-sm text-gray-500 mt-1">Configure your Google Sheets backend connection</p>
+        </div>
       </div>
 
-      <div className="bg-[#111] border border-white/5 rounded-2xl p-6 md:p-8">
-        <h2 className="text-lg font-semibold text-white mb-6">Security</h2>
-        
-        <form onSubmit={handleUpdatePassword} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
-            <input 
-              type="text"
-              disabled
-              value={user?.email || ''}
-              className="w-full bg-black/50 border border-white/5 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
-            />
+      <div className="premium-card p-6">
+        <div className="flex items-start gap-4 mb-6">
+          <div className={`p-3 rounded-xl ${isAuthenticated ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            <Key className="w-6 h-6" />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">New Password</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600" />
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min. 6 characters)"
-                className="w-full pl-12 pr-4 py-3 bg-black border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-brand-orange transition-colors"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={saving || !newPassword}
-            className="w-full py-3 bg-white hover:bg-gray-200 text-black rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
-          >
-            {saving ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold mb-1">Google OAuth Connection</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {isAuthenticated 
+                ? 'Your Google account is securely connected. The dashboard has read/write access to your sheets.'
+                : 'Connect your Google account to allow the dashboard to read and write from your Google Sheets.'}
+            </p>
+            
+            {isAuthenticated ? (
+              <button 
+                onClick={logout}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#050505] text-sm font-semibold rounded-lg transition-colors"
+              >
+                Disconnect Account
+              </button>
             ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Update Password
-              </>
+              <button 
+                onClick={() => login()}
+                className="px-4 py-2 bg-[#050505] hover:bg-black/80 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Link2 className="w-4 h-4" />
+                Connect Google Account
+              </button>
             )}
-          </button>
-        </form>
+          </div>
+        </div>
       </div>
+
+      <div className="premium-card p-6">
+        <div className="flex items-start gap-4">
+          <div className={`p-3 rounded-xl ${spreadsheetId ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+            <Database className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold mb-1">Spreadsheet Connection</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Enter the Spreadsheet ID or paste the full URL of the Google Sheet you want to use as your database.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input 
+                type="text" 
+                placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                value={sheetIdInput}
+                onChange={(e) => setSheetIdInput(e.target.value)}
+                className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
+                disabled={!isAuthenticated}
+              />
+              <button 
+                onClick={handleSaveSheetId}
+                disabled={!isAuthenticated || !sheetIdInput.trim()}
+                className="px-4 py-2 bg-[#050505] disabled:bg-gray-300 disabled:text-gray-500 hover:bg-black/80 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
+              >
+                Save Connection
+              </button>
+            </div>
+            {!isAuthenticated && (
+              <p className="text-xs text-red-500 mt-2 font-medium">Please connect your Google Account first.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };

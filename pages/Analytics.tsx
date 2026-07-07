@@ -1,38 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Target, TrendingUp, Users, CalendarDays, CheckCircle } from 'lucide-react';
-import { googleSheets, Goal, Task } from '../lib/googleSheets';
+import { googleSheetsAPI } from '../lib/googleSheets';
+import { useSheetsData } from '../hooks/useSheetsData';
 
 const Analytics: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [goal, setGoal] = useState<Goal | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { data: goalsData, loading: goalsLoading } = useSheetsData(googleSheetsAPI.getGoals);
+  const { data: tasksData, loading: tasksLoading } = useSheetsData(googleSheetsAPI.getTasks);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [goalsData, tasksData] = await Promise.all([
-          googleSheets.getGoals(),
-          googleSheets.getTasks()
-        ]);
-
-        if (goalsData && goalsData.length > 0) {
-          setGoal(goalsData[0]);
-        }
-        
-        if (tasksData) {
-          setTasks(tasksData);
-        }
-
-      } catch (error) {
-        console.error("Error fetching analytics data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const loading = goalsLoading || tasksLoading;
+  const goal = goalsData && goalsData.length > 0 ? goalsData[0] : null;
+  const tasks = tasksData || [];
 
   const calculateProgress = () => {
     const c = parseInt(goal?.completed_tasks || '0');

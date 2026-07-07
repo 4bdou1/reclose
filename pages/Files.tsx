@@ -1,29 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Search, Folder, File, FileText, Image, MoreVertical, ExternalLink } from 'lucide-react';
-import { googleSheets, FileData } from '../lib/googleSheets';
+import { googleSheetsAPI } from '../lib/googleSheets';
+import { useSheetsData } from '../hooks/useSheetsData';
 
 const categories = ['All Files', 'Client files', 'Research', 'Documents', 'Assets', 'Pitch decks'];
 
 const Files: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [files, setFiles] = useState<FileData[]>([]);
+  const { data: files, loading } = useSheetsData(googleSheetsAPI.getFiles);
   const [activeCategory, setActiveCategory] = useState('All Files');
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    const fetchFiles = async () => {
-      setLoading(true);
-      try {
-        const data = await googleSheets.getFiles();
-        setFiles(data || []);
-      } catch (error) {
-        console.error("Error fetching files", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFiles();
-  }, []);
 
   const filteredFiles = files.filter(f => {
     const matchesCat = activeCategory === 'All Files' || f.category?.toLowerCase() === activeCategory.toLowerCase();

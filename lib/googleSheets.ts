@@ -1,8 +1,3 @@
-import Papa from 'papaparse';
-
-// You will need to provide your Google Spreadsheet ID here or in an env variable
-const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEET_ID || 'YOUR_SPREADSHEET_ID';
-
 export interface Task {
   id: string;
   task: string;
@@ -55,37 +50,81 @@ export interface Activity {
   timestamp: string;
 }
 
-async function fetchSheetData<T>(sheetName: string): Promise<T[]> {
-  if (SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID') {
-    console.warn('Google Sheet ID not set. Please set VITE_GOOGLE_SHEET_ID in your .env file.');
-    return [];
-  }
-
-  // To use this, the Google Sheet MUST be published to the web as CSV:
-  // File -> Share -> Publish to web -> Select the specific sheet -> Comma-separated values (.csv)
-  // Or, you can use the gviz URL format if the sheet is public to "Anyone with the link"
-  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-
-  return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        resolve(results.data as T[]);
-      },
-      error: (error) => {
-        console.error(`Error fetching data for sheet ${sheetName}:`, error);
-        reject(error);
-      }
+/**
+ * Parses a 2D array from Google Sheets API into an array of objects based on the header row.
+ */
+function parseSheetData<T>(values: any[][]): T[] {
+  if (!values || values.length < 2) return [];
+  
+  const headers = values[0];
+  const rows = values.slice(1);
+  
+  return rows.map(row => {
+    const obj: any = {};
+    headers.forEach((header: string, index: number) => {
+      obj[header] = row[index] || '';
     });
+    return obj as T;
   });
 }
 
-export const googleSheets = {
-  getTasks: () => fetchSheetData<Task>('Tasks'),
-  getResearch: () => fetchSheetData<Research>('Research'),
-  getFiles: () => fetchSheetData<FileData>('Files'),
-  getGoals: () => fetchSheetData<Goal>('Goals'),
-  getActivity: () => fetchSheetData<Activity>('Activity'),
+/**
+ * Fetch a specific sheet tab using the Google Sheets API v4.
+ */
+export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, accessToken: string): Promise<T[]> {
+  if (!spreadsheetId || !accessToken) return [];
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:Z`;
+  
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch sheet ${sheetName}: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return parseSheetData<T>(data.values || []);
+}
+
+/**
+ * Append a row to a specific sheet tab using the Google Sheets API v4.
+ */
+export async function appendRow(sheetName: string, rowData: any[], spreadsheetId: string, accessToken: string): Promise<boolean> {
+  if (!spreadsheetId || !accessToken) return false;
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:A:append?valueInputOption=USER_ENTERED`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      range: `${sheetName}!A:A`,
+      majorDimension: 'ROWS',
+      values: [rowData],
+    }),
+  });
+
+  if (!response.ok) {
+    console.error(`Failed to append to sheet ${sheetName}:`, await response.text());
+    return false;
+  }
+
+  return true;
+}
+
+export const googleSheetsAPI = {
+  getTasks: (id: string, token: string) => fetchSheet<Task>('Tasks', id, token),
+  getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token),
+  getFiles: (id: string, token: string) => fetchSheet<FileData>('Files', id, token),
+  getGoals: (id: string, token: string) => fetchSheet<Goal>('Goals', id, token),
+  getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
+  
+  addTask: (taskValues: any[], id: string, token: string) => appendRow('Tasks', taskValues, id, token),
 };

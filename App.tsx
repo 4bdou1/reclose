@@ -1,6 +1,8 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleAuthProviderContext, useGoogleAuth } from './context/GoogleAuthContext';
 import { Toaster } from 'sonner';
 
 // Pages
@@ -25,20 +27,29 @@ import LeadCaptureForm from './components/landing/LeadCaptureForm';
 import Footer from './components/Footer';
 import Navbar from './components/landing/Navbar';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
+  const { isAuthenticated, spreadsheetId, isReady } = useGoogleAuth();
+  const location = useLocation();
 
-  if (loading) {
+  if (loading || !isReady) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-black border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // If user is authenticated but hasn't connected Google or a spreadsheet, force them to settings
+  if ((!isAuthenticated || !spreadsheetId) && location.pathname !== '/dashboard/settings') {
+    return <Navigate to="/dashboard/settings" replace />;
   }
 
   return <>{children}</>;
@@ -79,8 +90,8 @@ const AppRoutes: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-black border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -119,21 +130,26 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#111',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: '#fff',
-            },
-          }}
-        />
-      </AuthProvider>
-    </BrowserRouter>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <GoogleAuthProviderContext>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: '#FFFFFF',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  color: '#050505',
+                  borderRadius: '16px',
+                },
+              }}
+            />
+          </AuthProvider>
+        </BrowserRouter>
+      </GoogleAuthProviderContext>
+    </GoogleOAuthProvider>
   );
 };
 

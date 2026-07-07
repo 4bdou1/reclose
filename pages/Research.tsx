@@ -1,27 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Search, ExternalLink, Tag } from 'lucide-react';
-import { googleSheets, Research as ResearchItem } from '../lib/googleSheets';
+import { googleSheetsAPI } from '../lib/googleSheets';
+import { useSheetsData } from '../hooks/useSheetsData';
 
 const Research: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [researchItems, setResearchItems] = useState<ResearchItem[]>([]);
+  const { data: researchItems, loading } = useSheetsData(googleSheetsAPI.getResearch);
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    const fetchResearch = async () => {
-      setLoading(true);
-      try {
-        const data = await googleSheets.getResearch();
-        setResearchItems(data || []);
-      } catch (error) {
-        console.error("Error fetching research", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchResearch();
-  }, []);
 
   const categories = ['All', 'Clients', 'Ideas', 'Documents'];
 

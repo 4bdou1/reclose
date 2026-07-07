@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Microscope, BarChart2, Folder, Bell } from 'lucide-react';
+import { Home, CheckSquare, Microscope, BarChart2, Folder, Bell, Settings as SettingsIcon } from 'lucide-react';
 
 const navItems = [
   { label: 'Home', to: '/dashboard', icon: Home },
@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Research', to: '/dashboard/research', icon: Microscope },
   { label: 'Analytics', to: '/dashboard/analytics', icon: BarChart2 },
   { label: 'Files', to: '/dashboard/files', icon: Folder },
+  { label: 'Settings', to: '/dashboard/settings', icon: SettingsIcon },
 ];
 
 const DashboardLayout: React.FC = () => {
