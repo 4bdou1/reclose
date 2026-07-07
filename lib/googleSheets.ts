@@ -91,14 +91,41 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
 }
 
 /**
- * Append a row to a specific sheet tab using the Google Sheets API v4.
+ * Append a row to a specific sheet tab, intelligently mapping object keys to the sheet's column headers.
  */
-export async function appendRow(sheetName: string, rowData: any[], spreadsheetId: string, accessToken: string): Promise<boolean> {
+export async function appendRow(sheetName: string, rowData: Record<string, any>, spreadsheetId: string, accessToken: string): Promise<boolean> {
   if (!spreadsheetId || !accessToken) return false;
 
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:A:append?valueInputOption=USER_ENTERED`;
+  // 1. Fetch the headers (Row 1) first to know where to put each piece of data
+  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!1:1`;
+  const headerResponse = await fetch(headerUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!headerResponse.ok) {
+    console.error(`Failed to fetch headers for ${sheetName}`);
+    return false;
+  }
+
+  const headerData = await headerResponse.json();
+  const headers: string[] = (headerData.values && headerData.values[0]) ? headerData.values[0] : [];
+
+  if (headers.length === 0) {
+    console.error(`No headers found in row 1 of sheet ${sheetName}`);
+    return false;
+  }
+
+  // 2. Map the rowData object into an array ordered exactly like the headers
+  const orderedRow = headers.map(header => {
+    // lowercase the header to make matching case-insensitive and robust
+    const key = header.toLowerCase().trim().replace(/ /g, '_');
+    return rowData[key] !== undefined ? rowData[key] : '';
+  });
+
+  // 3. Append the ordered array
+  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:A:append?valueInputOption=USER_ENTERED`;
   
-  const response = await fetch(url, {
+  const appendResponse = await fetch(appendUrl, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -107,12 +134,12 @@ export async function appendRow(sheetName: string, rowData: any[], spreadsheetId
     body: JSON.stringify({
       range: `${sheetName}!A:A`,
       majorDimension: 'ROWS',
-      values: [rowData],
+      values: [orderedRow],
     }),
   });
 
-  if (!response.ok) {
-    console.error(`Failed to append to sheet ${sheetName}:`, await response.text());
+  if (!appendResponse.ok) {
+    console.error(`Failed to append to sheet ${sheetName}:`, await appendResponse.text());
     return false;
   }
 
@@ -126,5 +153,5 @@ export const googleSheetsAPI = {
   getGoals: (id: string, token: string) => fetchSheet<Goal>('Goals', id, token),
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
   
-  addTask: (taskValues: any[], id: string, token: string) => appendRow('Tasks', taskValues, id, token),
+  addTask: (taskObj: Record<string, any>, id: string, token: string) => appendRow('Tasks', taskObj, id, token),
 };

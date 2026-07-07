@@ -44,22 +44,21 @@ const Tasks: React.FC = () => {
     
     setIsAdding(true);
     try {
-      // Row schema: id, task, owner, role, status, priority, deadline, progress, category, last_updated, notes
-      const newRow = [
-        crypto.randomUUID(),
-        newTaskName,
-        'Current User',
-        'Team Member',
-        'Not Started',
-        'Medium',
-        new Date().toISOString().split('T')[0],
-        '0',
-        'General',
-        new Date().toISOString().split('T')[0],
-        ''
-      ];
+      const newTaskObj = {
+        id: crypto.randomUUID(),
+        task: newTaskName,
+        owner: 'Current User',
+        role: 'Team Member',
+        status: 'Not Started',
+        priority: 'Medium',
+        deadline: new Date().toISOString().split('T')[0],
+        progress: '0',
+        category: 'General',
+        last_updated: new Date().toISOString().split('T')[0],
+        notes: ''
+      };
       
-      const success = await googleSheetsAPI.addTask(newRow, spreadsheetId, accessToken);
+      const success = await googleSheetsAPI.addTask(newTaskObj, spreadsheetId, accessToken);
       if (success) {
         toast.success('Task added to Google Sheets!');
         setNewTaskName('');
