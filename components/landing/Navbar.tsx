@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Logo from '../Logo';
 
 const Navbar: React.FC = () => {
@@ -36,7 +37,7 @@ const Navbar: React.FC = () => {
     <>
       <nav className="fixed inset-x-0 top-0 z-50 px-4 pt-5 md:px-6">
         <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-6">
-          <a href="/auth" className="justify-self-start">
+          <Link to="/dashboard" className="justify-self-start">
             <Logo
               size="sm"
               showText={true}
@@ -44,7 +45,7 @@ const Navbar: React.FC = () => {
               animateTextReveal={true}
               textVisible={isBrandExpanded}
             />
-          </a>
+          </Link>
 
           <div className="hidden items-center justify-center lg:flex">
             <div className="flex items-center gap-10 rounded-full bg-black/[0.04] px-7 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
@@ -93,9 +94,9 @@ const Navbar: React.FC = () => {
           className={`absolute right-0 top-0 flex h-full w-full max-w-[28rem] flex-col border-l border-white/10 bg-[#0a0a0f]/96 p-6 shadow-[0_0_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
           <div className="flex items-center justify-between">
-            <a href="/auth" onClick={() => setIsOpen(false)}>
+            <Link to="/dashboard" onClick={() => setIsOpen(false)}>
               <Logo size="sm" showText={true} />
-            </a>
+            </Link>
             <button
               onClick={() => setIsOpen(false)}
               className="rounded-full border border-white/10 p-2 text-white transition-colors hover:border-white/25 hover:text-[#D6B36B]"
