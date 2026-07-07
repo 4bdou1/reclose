@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
-import { LayoutGrid, List, Search, Plus, Loader2 } from 'lucide-react';
+import { LayoutGrid, List, Search, Plus, Loader2, Sparkles, X } from 'lucide-react';
 import { googleSheetsAPI, Task } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
+import { useAuth } from '../context/AuthContext';
+import { parseTaskFromText, ParsedTask } from '../lib/ai';
 import { toast } from 'sonner';
 
 const Tasks: React.FC = () => {
   const { data: tasks, loading, refetch } = useSheetsData(googleSheetsAPI.getTasks);
   const { spreadsheetId, accessToken } = useGoogleAuth();
+  const { user } = useAuth();
   
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
-  const [newTaskName, setNewTaskName] = useState('');
+  
+  // AI Task State
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newTaskInput, setNewTaskInput] = useState('');
+  const [parsedPreview, setParsedPreview] = useState<ParsedTask | null>(null);
 
   const filteredTasks = tasks.filter(t => 
     t.task?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -38,20 +45,41 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const handleAddTask = async (e: React.FormEvent) => {
+  const handleAnalyzeTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskName.trim() || !spreadsheetId || !accessToken) return;
+    if (!newTaskInput.trim() || !spreadsheetId || !accessToken) return;
     
-    setIsAdding(true);
+    setIsAnalyzing(true);
     try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
+      const parsed = await parseTaskFromText(newTaskInput, apiKey);
+      if (parsed) {
+        setParsedPreview(parsed);
+      } else {
+        toast.error('AI could not understand the task.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error analyzing task');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleConfirmTask = async () => {
+    if (!parsedPreview || !spreadsheetId || !accessToken) return;
+    
+    setIsSaving(true);
+    try {
+      const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
+      
       const newTaskObj = {
         id: crypto.randomUUID(),
-        task: newTaskName,
-        owner: 'Current User',
+        task: parsedPreview.task,
+        owner: ownerName,
         role: 'Team Member',
-        status: 'Not Started',
-        priority: 'Medium',
-        deadline: new Date().toISOString().split('T')[0],
+        status: parsedPreview.status,
+        priority: parsedPreview.priority,
+        deadline: parsedPreview.deadline,
         progress: '0',
         category: 'General',
         last_updated: new Date().toISOString().split('T')[0],
@@ -61,7 +89,8 @@ const Tasks: React.FC = () => {
       const success = await googleSheetsAPI.addTask(newTaskObj, spreadsheetId, accessToken);
       if (success) {
         toast.success('Task added to Google Sheets!');
-        setNewTaskName('');
+        setNewTaskInput('');
+        setParsedPreview(null);
         refetch(); // Reload the data
       } else {
         toast.error('Failed to add task');
@@ -70,7 +99,7 @@ const Tasks: React.FC = () => {
       toast.error('Error adding task');
       console.error(err);
     } finally {
-      setIsAdding(false);
+      setIsSaving(false);
     }
   };
 
@@ -110,25 +139,105 @@ const Tasks: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Add Task */}
-      <form onSubmit={handleAddTask} className="premium-card p-4 flex gap-3 items-center">
-        <input 
-          type="text"
-          placeholder="New task name..."
-          value={newTaskName}
-          onChange={(e) => setNewTaskName(e.target.value)}
-          className="flex-1 bg-transparent border-none focus:outline-none text-sm placeholder:text-gray-400"
-          disabled={isAdding}
-        />
-        <button 
-          type="submit"
-          disabled={isAdding || !newTaskName.trim()}
-          className="px-4 py-2 bg-[#050505] disabled:bg-gray-300 text-white text-sm font-semibold rounded-lg flex items-center gap-2"
-        >
-          {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Add Task
-        </button>
-      </form>
+      {/* AI Add Task */}
+      <div className="space-y-4">
+        <form onSubmit={handleAnalyzeTask} className="premium-card p-4 flex gap-3 items-center border-[#D6B36B]/30 bg-white shadow-sm focus-within:border-[#C5A059] transition-colors">
+          <Sparkles className="w-5 h-5 text-[#C5A059] shrink-0" />
+          <input 
+            type="text"
+            placeholder="Ask AI to create a task (e.g., 'Finish landing page by Friday, high priority')"
+            value={newTaskInput}
+            onChange={(e) => setNewTaskInput(e.target.value)}
+            className="flex-1 bg-transparent border-none focus:outline-none text-sm placeholder:text-gray-400"
+            disabled={isAnalyzing || isSaving}
+          />
+          {newTaskInput.trim() && (
+            <button
+              type="button"
+              onClick={() => { setNewTaskInput(''); setParsedPreview(null); }}
+              className="p-1 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+          <button 
+            type="submit"
+            disabled={isAnalyzing || isSaving || !newTaskInput.trim()}
+            className="px-5 py-2 bg-[#050505] disabled:bg-gray-300 text-white text-sm font-semibold rounded-lg flex items-center gap-2 shadow-md hover:bg-[#1a1a1a] transition-all"
+          >
+            {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generate'}
+          </button>
+        </form>
+
+        {/* AI Preview Card */}
+        {parsedPreview && (
+          <div className="premium-card p-5 border-[#050505]/10 animate-in fade-in slide-in-from-top-2 duration-300 bg-gray-50/50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">Task Preview</h3>
+              <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-md">Parsed by AI</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Task Title</label>
+                <input
+                  type="text"
+                  value={parsedPreview.task}
+                  onChange={(e) => setParsedPreview({...parsedPreview, task: e.target.value})}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:border-black"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Owner</label>
+                <input
+                  type="text"
+                  value={user?.user_metadata?.full_name || user?.email || 'Unknown User'}
+                  disabled
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Priority</label>
+                <select
+                  value={parsedPreview.priority}
+                  onChange={(e) => setParsedPreview({...parsedPreview, priority: e.target.value})}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:border-black"
+                >
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Deadline</label>
+                <input
+                  type="date"
+                  value={parsedPreview.deadline}
+                  onChange={(e) => setParsedPreview({...parsedPreview, deadline: e.target.value})}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:border-black"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setParsedPreview(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmTask}
+                disabled={isSaving}
+                className="px-6 py-2 bg-[#D6B36B] hover:bg-[#c4a159] text-black text-sm font-semibold rounded-lg flex items-center gap-2 shadow-md transition-all"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Task'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <div className="w-full h-64 bg-gray-200 rounded-3xl animate-pulse" />
