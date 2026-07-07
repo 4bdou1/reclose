@@ -45,6 +45,32 @@ const formatToSheetDate = (inputDate: string) => {
   return inputDate;
 };
 
+const parseToInputTime = (sheetTime: string) => {
+  if (!sheetTime) return '';
+  const match = sheetTime.trim().match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)$/i);
+  if (match) {
+    let h = parseInt(match[1]);
+    const m = match[2] || '00';
+    const isPM = match[3].toLowerCase() === 'pm';
+    if (isPM && h < 12) h += 12;
+    if (!isPM && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m}`;
+  }
+  const match24 = sheetTime.trim().match(/^(\d{2}):(\d{2})$/);
+  if (match24) return sheetTime;
+  return '';
+};
+
+const formatToSheetTime = (inputTime: string) => {
+  if (!inputTime) return '';
+  const [hStr, mStr] = inputTime.split(':');
+  let h = parseInt(hStr);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return `${h}:${mStr} ${ampm}`;
+};
+
 const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: number }, onUpdate: (row: any) => void }) => {
   const [data, setData] = useState(item);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -143,10 +169,9 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       {/* Time of Contact */}
       <td className="p-2 border-b border-gray-100">
         <input 
-          type="text" 
-          placeholder="Time (e.g. 10am)"
-          value={data.time_of_contact || ''} 
-          onChange={e => handleChange('time_of_contact', e.target.value)}
+          type="time" 
+          value={parseToInputTime(data.time_of_contact)} 
+          onChange={e => handleChange('time_of_contact', formatToSheetTime(e.target.value))}
           onBlur={() => handleBlur('time_of_contact')}
           className="w-full bg-transparent text-xs text-gray-500 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
         />
