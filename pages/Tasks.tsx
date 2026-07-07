@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { LayoutGrid, List, Search, Plus, Loader2, Sparkles, X } from 'lucide-react';
+import { LayoutGrid, List, Search, Plus, Loader2, Sparkles, X, CheckCircle2, Trash2 } from 'lucide-react';
 import { googleSheetsAPI, Task } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { useAuth } from '../context/AuthContext';
 import { parseTaskFromText, ParsedTask } from '../lib/ai';
 import { toast } from 'sonner';
-import { TaskCard } from '../components/tasks/TaskCard';
+import { SwipeableList, SwipeableListItem, SwipeAction } from '../components/ui/be-ui-swipeable-list';
 
 const Tasks: React.FC = () => {
   const { data: tasks, loading, refetch } = useSheetsData(googleSheetsAPI.getTasks);
@@ -145,6 +145,31 @@ const Tasks: React.FC = () => {
       toast.error(err.message || 'Failed to delete task');
     }
   };
+
+  const leftActions: SwipeAction[] = [
+    {
+      id: "done",
+      label: "Done",
+      icon: <CheckCircle2 className="h-5 w-5" />,
+      tone: "success",
+    }
+  ];
+
+  const rightActions: SwipeAction[] = [
+    {
+      id: "trash",
+      label: "Trash",
+      icon: <Trash2 className="h-5 w-5" />,
+      tone: "danger",
+    }
+  ];
+
+  const swipeableItems: SwipeableListItem[] = filteredTasks.map((task, idx) => ({
+    id: task.id || String(idx),
+    leftActions,
+    rightActions,
+    taskData: task,
+  } as any));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
@@ -320,17 +345,46 @@ const Tasks: React.FC = () => {
           </table>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTasks.map((task, idx) => (
-            <TaskCard 
-              key={task.id || idx}
-              task={task}
-              onComplete={handleCompleteTask}
-              onDelete={handleDeleteTask}
-              getStatusColor={getStatusColor}
-              getPriorityColor={getPriorityColor}
-            />
-          ))}
+        <div className="w-full max-w-5xl mx-auto">
+          <SwipeableList
+            items={swipeableItems}
+            actionWidth={72}
+            revealThreshold={40}
+            onAction={({ item, action }) => {
+              const task = (item as any).taskData as Task;
+              if (action.id === "done") {
+                handleCompleteTask(task);
+              } else if (action.id === "trash") {
+                handleDeleteTask(task);
+              }
+            }}
+            renderItem={(item) => {
+              const task = (item as any).taskData as Task;
+              return (
+                <div className="flex flex-col w-full h-full p-1">
+                  <div className="flex items-start justify-between mb-4">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(task.status)}`}>
+                      {task.status}
+                    </span>
+                    <span className={`text-[10px] uppercase tracking-wider ${getPriorityColor(task.priority)}`}>
+                      {task.priority}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-lg leading-tight mb-4">{task.task}</h3>
+                  
+                  <div className="space-y-2 mt-auto">
+                    <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                       <div className="bg-[#050505] h-full rounded-full" style={{ width: `${task.progress || 0}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs mt-4">
+                      <span className="font-medium text-gray-500">User: <span className="text-black">{task.user}</span></span>
+                      <span className="font-medium text-gray-500">{task.deadline}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }}
+          />
         </div>
       )}
     </div>
