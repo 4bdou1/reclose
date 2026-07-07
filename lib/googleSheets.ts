@@ -115,17 +115,30 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
     throw new Error(`No headers found in row 1 of sheet ${sheetName}. Please ensure your sheet has headers (e.g. Task, User, Status).`);
   }
 
+  // Find where the headers actually start (in case Column A is empty)
+  let startColIndex = 0;
+  while (startColIndex < headers.length && !headers[startColIndex].trim()) {
+    startColIndex++;
+  }
+
+  if (startColIndex >= headers.length) {
+    throw new Error(`No valid headers found in row 1 of sheet ${sheetName}.`);
+  }
+
+  const startColLetter = String.fromCharCode(65 + startColIndex);
+
   // 2. Map the rowData object into an array ordered exactly like the headers
   const orderedRow = headers.map(header => {
-    // lowercase the header to make matching case-insensitive and robust
+    if (!header.trim()) return '';
     const key = header.toLowerCase().trim().replace(/ /g, '_');
     return rowData[key] !== undefined ? rowData[key] : '';
   });
 
-  // 3. Append the ordered array
-  // We use just the sheetName as the range so it searches all columns for the last row, 
-  // and insertDataOption=INSERT_ROWS to guarantee it never overwrites existing data (like headers).
-  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  // Only send data starting from the first actual column so Google Sheets doesn't scan an empty Column A and insert at Row 1
+  const slicedRow = orderedRow.slice(startColIndex);
+
+  // 3. Append the ordered array using the specific column letter so it finds the true bottom of the table
+  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${startColLetter}:${startColLetter}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   
   const appendResponse = await fetch(appendUrl, {
     method: 'POST',
@@ -134,9 +147,9 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      range: sheetName,
+      range: `${sheetName}!${startColLetter}:${startColLetter}`,
       majorDimension: 'ROWS',
-      values: [orderedRow],
+      values: [slicedRow],
     }),
   });
 
