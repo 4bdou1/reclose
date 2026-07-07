@@ -1,195 +1,167 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { BarChart3, Gauge, Target, TimerReset } from 'lucide-react';
-import {
-  buildTaskBreakdown,
-  companyGoals,
-  fetchMissionTasks,
-  memberContribution,
-  missionPreview,
-  weeklyCompletedTasks,
-} from '../lib/hosMissionControl';
+import React, { useEffect, useState } from 'react';
+import { Target, TrendingUp, Users, CalendarDays, CheckCircle } from 'lucide-react';
+import { googleSheets, Goal, Task } from '../lib/googleSheets';
 
-export default function Analytics() {
-  const [taskBreakdown, setTaskBreakdown] = useState({
-    total: 24,
-    inProgress: 9,
-    notStarted: 7,
-    completed: 6,
-    onHold: 2,
-  });
+const Analytics: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [goal, setGoal] = useState<Goal | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
-    let active = true;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [goalsData, tasksData] = await Promise.all([
+          googleSheets.getGoals(),
+          googleSheets.getTasks()
+        ]);
 
-    async function loadTasks() {
-      const { tasks } = await fetchMissionTasks();
-      if (!active) return;
-      setTaskBreakdown(buildTaskBreakdown(tasks));
-    }
+        if (goalsData && goalsData.length > 0) {
+          setGoal(goalsData[0]);
+        }
+        
+        if (tasksData) {
+          setTasks(tasksData);
+        }
 
-    loadTasks();
-
-    return () => {
-      active = false;
+      } catch (error) {
+        console.error("Error fetching analytics data", error);
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchData();
   }, []);
 
-  const averageVelocity = useMemo(() => {
-    const total = weeklyCompletedTasks.reduce((sum, value) => sum + value, 0);
-    return (total / weeklyCompletedTasks.length).toFixed(1);
-  }, []);
+  const calculateProgress = () => {
+    const c = parseInt(goal?.completed_tasks || '0');
+    const t = parseInt(goal?.total_tasks || '1');
+    return Math.round((c / t) * 100);
+  };
+
+  const calculateDaysLeft = () => {
+    if (!goal?.target_date) return 0;
+    const diffTime = Math.abs(new Date(goal.target_date).getTime() - new Date().getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+  };
+
+  // Calculate team contribution
+  const teamContribution = tasks.reduce((acc, task) => {
+    if (task.status === 'Completed') {
+      acc[task.owner] = (acc[task.owner] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const sortedTeam = Object.entries(teamContribution)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5);
+
+  const completedCount = parseInt(goal?.completed_tasks || '0');
+  const expectedPace = 50; // Placeholder for expected progress metric
+  const currentPace = calculateProgress();
+  const isOnTrack = currentPace >= expectedPace;
 
   return (
-    <div className="space-y-6 pb-28">
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="hos-panel rounded-[2rem] p-5 sm:p-6"
-      >
-        <p className="text-[11px] uppercase tracking-[0.34em] text-[#E8D7AA]/82">Analytics</p>
-        <h1 className="mt-3 text-[2.3rem] font-semibold leading-[0.95] tracking-[-0.06em] text-white">
-          Company goals and team velocity.
-        </h1>
-        <p className="mt-3 max-w-2xl text-base leading-7 text-white/58">
-          Track completion percentage, contribution, deadlines, and progress against expected completion time inside one premium operating layer.
-        </p>
-      </motion.section>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight mb-1">Analytics</h1>
+          <p className="text-sm text-gray-500">Project trajectory and team velocity</p>
+        </div>
+      </div>
 
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className="grid gap-4 xl:grid-cols-3"
-      >
-        <div className="hos-panel rounded-[1.8rem] p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Team Velocity</p>
-            <Gauge className="h-4 w-4 text-[#E8D7AA]" />
-          </div>
-          <div className="mt-6 text-5xl font-semibold tracking-[-0.06em] text-white">{averageVelocity}</div>
-          <p className="mt-2 text-white/58">tasks completed per week</p>
-          <div className="mt-6 flex h-28 items-end gap-3">
-            {weeklyCompletedTasks.map((value, index) => (
-              <div key={`${value}-${index}`} className="flex flex-1 flex-col items-center gap-2">
-                <div
-                  className="w-full rounded-t-[1rem] bg-[linear-gradient(180deg,#F5E9C6_0%,rgba(232,215,170,0.22)_100%)]"
-                  style={{ height: `${value * 14}px` }}
-                />
-                <span className="text-[10px] uppercase tracking-[0.24em] text-white/34">W{index + 1}</span>
-              </div>
-            ))}
+      {loading ? (
+        <div className="space-y-4">
+          <div className="w-full h-32 bg-gray-200 rounded-3xl animate-pulse" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-40 bg-gray-200 rounded-3xl animate-pulse" />
+            <div className="h-40 bg-gray-200 rounded-3xl animate-pulse" />
           </div>
         </div>
-
-        <div className="hos-panel rounded-[1.8rem] p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Task State</p>
-            <BarChart3 className="h-4 w-4 text-[#E8D7AA]" />
-          </div>
-          <div className="mt-6 space-y-4">
-            {[
-              { label: 'In Progress', value: taskBreakdown.inProgress, color: 'bg-[#E8D7AA]' },
-              { label: 'Not Started', value: taskBreakdown.notStarted, color: 'bg-[#8E939D]' },
-              { label: 'Completed', value: taskBreakdown.completed, color: 'bg-[#8EB391]' },
-              { label: 'On Hold', value: taskBreakdown.onHold, color: 'bg-[#CB8671]' },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex items-center justify-between text-sm text-white/62">
-                  <span>{item.label}</span>
-                  <span>{item.value}</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/8">
-                  <div
-                    className={`h-full rounded-full ${item.color}`}
-                    style={{
-                      width: `${taskBreakdown.total === 0 ? 0 : (item.value / taskBreakdown.total) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="hos-panel rounded-[1.8rem] p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Expected Completion</p>
-            <TimerReset className="h-4 w-4 text-[#E8D7AA]" />
-          </div>
-          <div className="mt-6 grid gap-4">
-            <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-white/34">Current Mission</p>
-              <p className="mt-2 text-xl font-semibold text-white">{missionPreview.title}</p>
-              <p className="mt-2 text-sm text-white/54">19 days left until target milestone</p>
+      ) : (
+        <>
+          {/* Main Trajectory Card */}
+          <div className={`p-6 md:p-8 rounded-[24px] border transition-all ${isOnTrack ? 'bg-[#050505] text-white border-black/10 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.15)]' : 'bg-red-50 text-red-900 border-red-100'}`}>
+            <div className="flex items-center justify-between mb-8">
+              <span className={`text-[10px] font-bold tracking-[0.2em] uppercase ${isOnTrack ? 'text-gray-400' : 'text-red-700'}`}>Trajectory</span>
+              <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${isOnTrack ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-700'}`}>
+                {isOnTrack ? 'ON TRACK' : 'BEHIND SCHEDULE'}
+              </span>
             </div>
-            <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-white/34">Projected Completion</p>
-              <p className="mt-2 text-xl font-semibold text-white">On track by July 24</p>
-              <p className="mt-2 text-sm text-emerald-300">+6% ahead of expected team velocity</p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div>
+                <p className={`text-[10px] font-medium mb-1 ${isOnTrack ? 'text-gray-400' : 'text-red-700/70'}`}>Completion</p>
+                <p className="text-3xl font-semibold">{currentPace}%</p>
+              </div>
+              <div>
+                <p className={`text-[10px] font-medium mb-1 ${isOnTrack ? 'text-gray-400' : 'text-red-700/70'}`}>Expected</p>
+                <p className="text-3xl font-semibold text-gray-500">{expectedPace}%</p>
+              </div>
+              <div>
+                <p className={`text-[10px] font-medium mb-1 ${isOnTrack ? 'text-gray-400' : 'text-red-700/70'}`}>Time Left</p>
+                <p className="text-3xl font-semibold">{calculateDaysLeft()}<span className="text-lg font-normal text-gray-500 ml-1">days</span></p>
+              </div>
+              <div>
+                <p className={`text-[10px] font-medium mb-1 ${isOnTrack ? 'text-gray-400' : 'text-red-700/70'}`}>Completed</p>
+                <p className="text-3xl font-semibold">{completedCount}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </motion.section>
 
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
-        className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]"
-      >
-        <div className="hos-panel rounded-[1.8rem] p-5 sm:p-6">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Company Goals</p>
-            <Target className="h-4 w-4 text-[#E8D7AA]" />
-          </div>
-          <div className="mt-6 space-y-5">
-            {companyGoals.map((goal) => (
-              <div key={goal.id} className="rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-semibold tracking-[-0.03em] text-white">{goal.title}</h2>
-                    <p className="mt-2 text-sm text-white/48">Owner: {goal.owner}</p>
-                  </div>
-                  <span className="text-3xl font-semibold tracking-[-0.05em] text-[#E8D7AA]">{goal.progress}%</span>
-                </div>
-                <div className="mt-4 h-2 rounded-full bg-white/8">
-                  <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,#F4E5BC_0%,#E8D7AA_100%)]"
-                    style={{ width: `${goal.progress}%` }}
-                  />
-                </div>
-                <p className="mt-3 text-sm text-white/44">Target: {goal.targetDate}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Team Contribution */}
+            <div className="premium-card p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Users className="w-4 h-4 text-gray-400" />
+                <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-gray-500">Team Velocity</h3>
               </div>
-            ))}
-          </div>
-        </div>
+              
+              <div className="space-y-4">
+                {sortedTeam.map(([name, count], idx) => {
+                  const max = sortedTeam[0][1] || 1;
+                  const percentage = (count / max) * 100;
+                  return (
+                    <div key={idx}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium">{name}</span>
+                        <span className="text-gray-500 font-medium">{count} tasks</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="bg-[#050505] h-full rounded-full" style={{ width: `${percentage}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+                {sortedTeam.length === 0 && (
+                  <p className="text-sm text-gray-500 py-4 text-center">No completed tasks yet.</p>
+                )}
+              </div>
+            </div>
 
-        <div className="hos-panel rounded-[1.8rem] p-5 sm:p-6">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Member Contribution</p>
-          <div className="mt-6 space-y-4">
-            {memberContribution.map((member) => (
-              <div key={member.name} className="rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-lg font-semibold text-white">{member.name}</p>
-                  <span className="text-sm text-white/44">{member.completed + member.active} active units</span>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-[1rem] bg-[#08090B] px-4 py-3">
-                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/34">Completed</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{member.completed}</p>
-                  </div>
-                  <div className="rounded-[1rem] bg-[#08090B] px-4 py-3">
-                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/34">In Motion</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{member.active}</p>
-                  </div>
-                </div>
+            {/* Weekly Productivity Metric placeholder */}
+            <div className="premium-card p-6 flex flex-col">
+              <div className="flex items-center gap-2 mb-6">
+                <TrendingUp className="w-4 h-4 text-gray-400" />
+                <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-gray-500">Weekly Output</h3>
               </div>
-            ))}
+              
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+                  <CheckCircle className="w-8 h-8 text-blue-500" />
+                </div>
+                <h4 className="text-3xl font-semibold mb-1">12</h4>
+                <p className="text-sm text-gray-500 font-medium">Tasks completed this week</p>
+                <p className="text-xs text-green-600 font-semibold mt-2 bg-green-50 px-2 py-1 rounded-md">+4 from last week</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </motion.section>
+        </>
+      )}
     </div>
   );
-}
+};
+
+export default Analytics;

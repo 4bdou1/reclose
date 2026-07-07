@@ -1,115 +1,126 @@
-import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ExternalLink, FileStack, Lightbulb, SearchCheck } from 'lucide-react';
-import { researchItems, ResearchBucket } from '../lib/hosMissionControl';
+import React, { useEffect, useState } from 'react';
+import { Search, ExternalLink, Tag } from 'lucide-react';
+import { googleSheets, Research as ResearchItem } from '../lib/googleSheets';
 
-const bucketIcons = {
-  Clients: SearchCheck,
-  Ideas: Lightbulb,
-  Documents: FileStack,
-};
+const Research: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [researchItems, setResearchItems] = useState<ResearchItem[]>([]);
+  const [activeTab, setActiveTab] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
 
-const buckets: ResearchBucket[] = ['Clients', 'Ideas', 'Documents'];
+  useEffect(() => {
+    const fetchResearch = async () => {
+      setLoading(true);
+      try {
+        const data = await googleSheets.getResearch();
+        setResearchItems(data || []);
+      } catch (error) {
+        console.error("Error fetching research", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResearch();
+  }, []);
 
-export default function Research() {
-  const [activeBucket, setActiveBucket] = useState<ResearchBucket>('Clients');
+  const categories = ['All', 'Clients', 'Ideas', 'Documents'];
 
-  const visibleItems = useMemo(
-    () => researchItems.filter((item) => item.bucket === activeBucket),
-    [activeBucket]
-  );
+  const filteredItems = researchItems.filter(item => {
+    const matchesTab = activeTab === 'All' || item.type?.toLowerCase() === activeTab.toLowerCase();
+    const matchesSearch = item.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          item.tags?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesTab && matchesSearch;
+  });
 
   return (
-    <div className="space-y-6 pb-28">
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="hos-panel rounded-[2rem] p-5 sm:p-6"
-      >
-        <p className="text-[11px] uppercase tracking-[0.34em] text-[#E8D7AA]/82">Research</p>
-        <h1 className="mt-3 text-[2.3rem] font-semibold leading-[0.95] tracking-[-0.06em] text-white">
-          Intelligence, ideas, and operator notes.
-        </h1>
-        <p className="mt-3 max-w-2xl text-base leading-7 text-white/58">
-          Split research into clients, ideas, and documents so the team can move from raw signals to reusable insight without losing context.
-        </p>
-
-        <div className="mt-6 inline-flex flex-wrap gap-2 rounded-[1.2rem] border border-white/10 bg-[#08090B] p-1">
-          {buckets.map((bucket) => {
-            const Icon = bucketIcons[bucket];
-            const active = activeBucket === bucket;
-
-            return (
-              <button
-                key={bucket}
-                type="button"
-                onClick={() => setActiveBucket(bucket)}
-                className={`lux-button inline-flex items-center gap-2 rounded-[0.95rem] px-4 py-2 text-sm ${
-                  active ? 'bg-[#E8D7AA] text-black' : 'text-white/58 hover:text-white'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {bucket}
-              </button>
-            );
-          })}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight mb-1">Research</h1>
+          <p className="text-sm text-gray-500">Insights, ideas, and client documentation</p>
         </div>
-      </motion.section>
 
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className="grid gap-4"
-      >
-        {visibleItems.map((item) => {
-          const Icon = bucketIcons[item.bucket];
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search research..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
+          />
+        </div>
+      </div>
 
-          return (
-            <article key={item.id} className="hos-panel rounded-[1.8rem] p-5 sm:p-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex gap-4">
-                  <div className="mt-0.5 rounded-[1.25rem] bg-white/[0.03] p-3 text-[#E8D7AA]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="max-w-2xl">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="rounded-full border border-[#E8D7AA]/16 bg-[#E8D7AA]/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-[#F5E9C6]">
-                        {item.bucket}
+      <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-2">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveTab(cat)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              activeTab === cat 
+                ? 'bg-[#050505] text-white' 
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-black'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="w-full h-64 bg-gray-200 rounded-3xl animate-pulse" />
+      ) : filteredItems.length === 0 ? (
+        <div className="w-full py-20 text-center text-gray-500 bg-white border border-gray-100 rounded-3xl shadow-sm">
+          No research items found.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredItems.map((item, idx) => (
+            <div key={idx} className="premium-card p-5 hover:-translate-y-1 transition-transform group">
+              <div className="flex items-start justify-between mb-3">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-700">
+                  {item.type}
+                </span>
+                <span className="text-[10px] text-gray-400 font-medium">{item.date_added}</span>
+              </div>
+              
+              <h3 className="font-semibold text-lg leading-tight mb-2">{item.title}</h3>
+              <p className="text-sm text-gray-600 mb-4 line-clamp-3">{item.summary}</p>
+              
+              <div className="mt-auto space-y-4">
+                {item.tags && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.tags.split(',').map((tag, tIdx) => (
+                      <span key={tIdx} className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                        <Tag className="w-3 h-3" />
+                        {tag.trim()}
                       </span>
-                      <span className="text-[11px] uppercase tracking-[0.28em] text-white/34">{item.dateAdded}</span>
-                    </div>
-                    <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white">{item.title}</h2>
-                    <p className="mt-3 text-sm leading-7 text-white/58">{item.description}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {item.tags.map((tag) => (
-                        <span key={tag} className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1 text-xs text-white/56">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    ))}
                   </div>
-                </div>
-
-                <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.03] p-4 text-sm text-white/62 lg:min-w-[16rem]">
-                  <p className="text-[10px] uppercase tracking-[0.25em] text-white/34">Owner</p>
-                  <p className="mt-2 text-white">{item.owner}</p>
-                  <a
-                    href={item.source}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex items-center gap-2 text-[#E8D7AA] hover:text-[#F5E9C6]"
-                  >
-                    Source link
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+                )}
+                
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <span className="text-xs font-medium text-gray-500">Added by <span className="text-black">{item.owner}</span></span>
+                  
+                  {item.source_link && (
+                    <a 
+                      href={item.source_link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      Source <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
-            </article>
-          );
-        })}
-      </motion.section>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default Research;
