@@ -1,365 +1,429 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
-  Users, Calendar, Clock, Power, TrendingUp,
-  MessageSquare, Zap, Wifi, WifiOff, Phone, Globe, Instagram
+  BellRing,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  FolderPlus,
+  ListTodo,
+  SearchCheck,
+  Sparkles,
+  Target,
 } from 'lucide-react';
-import { supabase, Lead, Activity, Integration, Meeting } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { toast } from 'sonner';
+import {
+  buildTaskBreakdown,
+  fetchMissionTasks,
+  missionActivities,
+  missionPreview,
+  weeklyProgressSeries,
+} from '../lib/hosMissionControl';
 
-const Overview: React.FC = () => {
-  const { user } = useAuth();
-  const [totalLeads, setTotalLeads] = useState(0);
-  const [meetingsBooked, setMeetingsBooked] = useState(0);
-  const [timeSaved, setTimeSaved] = useState(0);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [isAiActive, setIsAiActive] = useState(false);
-  const [receptionistId, setReceptionistId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+const cardMotion = {
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const },
+};
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-      subscribeToActivities();
-    }
-  }, [user]);
+const overviewMetrics = [
+  { label: 'Tasks Updated', value: '5', icon: ListTodo },
+  { label: 'Tasks Completed', value: '3', icon: CheckCircle2 },
+  { label: 'Research Updates', value: '2', icon: SearchCheck },
+  { label: 'Files Added', value: '1', icon: FolderPlus },
+];
 
-  const fetchData = async () => {
-    try {
-      // Fetch leads count
-      const { count: leadsCount } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user?.id);
-      setTotalLeads(leadsCount || 0);
+const deadlinePreview = [
+  { label: 'Today', task: 'Follow up with 10 agencies', owner: 'Abdoul' },
+  { label: 'May 28', task: 'Landing page content', owner: 'Ameer' },
+  { label: 'May 30', task: 'Deck update', owner: 'Abdoul' },
+];
 
-      // Fetch meetings count
-      const { count: meetingsCount } = await supabase
-        .from('meetings')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user?.id)
-        .eq('status', 'scheduled');
-      setMeetingsBooked(meetingsCount || 0);
+const activityIcons = {
+  completed: CheckCircle2,
+  updated: FileText,
+  research: SearchCheck,
+  file: FolderPlus,
+};
 
-      // Calculate time saved (estimate: 15 min per lead qualified)
-      setTimeSaved(Math.round((leadsCount || 0) * 0.25));
-
-      // Fetch recent activities
-      const { data: activityData } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      setActivities(activityData || []);
-
-      // Fetch integrations
-      const { data: integrationData } = await supabase
-        .from('integrations')
-        .select('*')
-        .eq('user_id', user?.id);
-      setIntegrations(integrationData || []);
-
-      // Fetch receptionist status
-      const { data: receptionist } = await supabase
-        .from('receptionists')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (receptionist) {
-        setIsAiActive(receptionist.is_active);
-        setReceptionistId(receptionist.id);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const subscribeToActivities = () => {
-    const channel = supabase
-      .channel('activities')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'activities', filter: `user_id=eq.${user?.id}` },
-        (payload) => {
-          setActivities((prev) => [payload.new as Activity, ...prev.slice(0, 9)]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const toggleAiStatus = async () => {
-    if (!user) return;
-    const newStatus = !isAiActive;
-    setIsAiActive(newStatus);
-
-    try {
-      if (receptionistId) {
-        const { error } = await supabase
-          .from('receptionists')
-          .update({ is_active: newStatus })
-          .eq('id', receptionistId);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from('receptionists')
-          .insert({ user_id: user.id, is_active: newStatus })
-          .select()
-          .single();
-        if (error) throw error;
-        if (data) setReceptionistId(data.id);
-      }
-
-      // Log activity
-      await supabase.from('activities').insert({
-        user_id: user.id,
-        type: 'integration_connected',
-        title: newStatus ? 'AI Receptionist Activated' : 'AI Receptionist Deactivated',
-        description: `System status changed to ${newStatus ? 'online' : 'offline'}`
-      });
-
-      toast.success(`AI Receptionist ${newStatus ? 'activated' : 'deactivated'}`);
-    } catch (error) {
-      setIsAiActive(!newStatus);
-      toast.error('Failed to update status');
-    }
-  };
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'lead_captured':
-        return <Users className="w-4 h-4 text-emerald-400" />;
-      case 'lead_qualified':
-        return <Zap className="w-4 h-4 text-[#C5A059]" />;
-      case 'meeting_booked':
-        return <Calendar className="w-4 h-4 text-blue-400" />;
-      case 'message_sent':
-        return <MessageSquare className="w-4 h-4 text-purple-400" />;
-      default:
-        return <Zap className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const getIntegrationIcon = (type: string) => {
-    switch (type) {
-      case 'whatsapp':
-        return <Phone className="w-5 h-5" />;
-      case 'web_widget':
-        return <Globe className="w-5 h-5" />;
-      case 'sms':
-        return <MessageSquare className="w-5 h-5" />;
-      case 'instagram':
-        return <Instagram className="w-5 h-5" />;
-      default:
-        return <Wifi className="w-5 h-5" />;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-[#C5A059] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  const defaultIntegrations = [
-    { type: 'whatsapp', name: 'WhatsApp', is_active: false },
-    { type: 'web_widget', name: 'Web Widget', is_active: true },
-    { type: 'sms', name: 'SMS', is_active: false },
-  ];
-
-  const displayIntegrations = defaultIntegrations.map(def => {
-    const found = integrations.find(i => i.type === def.type);
-    return found || { ...def, id: def.type };
-  });
+function ProgressGraph() {
+  const max = Math.max(...weeklyProgressSeries);
+  const points = weeklyProgressSeries
+    .map((value, index) => {
+      const x = (index / (weeklyProgressSeries.length - 1)) * 100;
+      const y = 100 - (value / max) * 100;
+      return `${x},${y}`;
+    })
+    .join(' ');
 
   return (
-    <div data-testid="overview-page" className="max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight font-[Manrope] drop-shadow-md">Command Center</h1>
-          <p className="text-gray-400 mt-1 font-medium">Your AI receptionist operating system</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${isAiActive
-            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-            : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-            }`}>
-            <span className={`w-2 h-2 rounded-full ${isAiActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
-            System {isAiActive ? 'Online' : 'Offline'}
-          </span>
-        </div>
+    <svg viewBox="0 0 100 100" className="h-28 w-full overflow-visible">
+      <defs>
+        <linearGradient id="weekly-progress-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(232,215,170,0.35)" />
+          <stop offset="100%" stopColor="rgba(232,215,170,0)" />
+        </linearGradient>
+      </defs>
+      <polyline
+        fill="none"
+        stroke="rgba(232,215,170,0.92)"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        points={points}
+      />
+      <polygon
+        fill="url(#weekly-progress-fill)"
+        points={`0,100 ${points} 100,100`}
+      />
+      {weeklyProgressSeries.map((value, index) => {
+        const x = (index / (weeklyProgressSeries.length - 1)) * 100;
+        const y = 100 - (value / max) * 100;
+
+        return (
+          <circle
+            key={`${value}-${index}`}
+            cx={x}
+            cy={y}
+            r="2.2"
+            fill="#E8D7AA"
+            stroke="#0B0B0D"
+            strokeWidth="1.2"
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+function CircularBreakdown({
+  total,
+  inProgress,
+  notStarted,
+  completed,
+  onHold,
+}: {
+  total: number;
+  inProgress: number;
+  notStarted: number;
+  completed: number;
+  onHold: number;
+}) {
+  const segments = [
+    { value: inProgress, color: '#E8D7AA' },
+    { value: notStarted, color: '#8E939D' },
+    { value: completed, color: '#8EB391' },
+    { value: onHold, color: '#CB8671' },
+  ];
+
+  let current = 0;
+  const gradient = segments
+    .map((segment) => {
+      const start = current;
+      const size = total === 0 ? 0 : (segment.value / total) * 100;
+      current += size;
+      return `${segment.color} ${start}% ${current}%`;
+    })
+    .join(', ');
+
+  return (
+    <div
+      className="relative h-44 w-44 rounded-full"
+      style={{
+        background: `conic-gradient(${gradient})`,
+      }}
+    >
+      <div className="absolute inset-[18px] rounded-full bg-[#09090C] ring-1 ring-white/6" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="text-4xl font-semibold tracking-[-0.05em] text-white">{total}</span>
+        <span className="mt-1 text-sm text-white/55">Total Tasks</span>
       </div>
+    </div>
+  );
+}
 
-      {/* Stats Grid - 3 Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Leads */}
-        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 relative overflow-hidden group hover:border-[#C5A059]/40 hover:bg-[#1C1C1E]/80 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#C5A059]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-medium uppercase tracking-widest text-gray-500">Total Leads</span>
-              <Users className="w-5 h-5 text-[#C5A059]" />
-            </div>
-            <p data-testid="total-leads-count" className="text-4xl font-bold text-white font-[Manrope]">{totalLeads}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
-              <span className="text-sm text-emerald-500">Captured by AI</span>
-            </div>
-          </div>
-        </div>
+export default function Overview() {
+  const [loading, setLoading] = useState(true);
+  const [taskBreakdown, setTaskBreakdown] = useState({
+    total: 24,
+    inProgress: 9,
+    notStarted: 7,
+    completed: 6,
+    onHold: 2,
+  });
 
-        {/* Meetings Booked (ROI) */}
-        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 relative overflow-hidden group hover:border-blue-500/40 hover:bg-[#1C1C1E]/80 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-medium uppercase tracking-widest text-gray-500">Meetings Booked</span>
-              <Calendar className="w-5 h-5 text-blue-400" />
-            </div>
-            <p data-testid="meetings-count" className="text-4xl font-bold text-white font-[Manrope]">{meetingsBooked}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-sm text-blue-400">Scheduled this month</span>
-            </div>
-          </div>
-        </div>
+  useEffect(() => {
+    let active = true;
 
-        {/* Time Saved */}
-        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 relative overflow-hidden group hover:border-purple-500/40 hover:bg-[#1C1C1E]/80 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-medium uppercase tracking-widest text-gray-500">Time Saved</span>
-              <Clock className="w-5 h-5 text-purple-400" />
-            </div>
-            <p data-testid="time-saved" className="text-4xl font-bold text-white font-[Manrope]">{timeSaved}<span className="text-xl text-gray-500 ml-1">hrs</span></p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-sm text-purple-400">From AI automation</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    async function loadTasks() {
+      const { tasks } = await fetchMissionTasks();
+      if (!active) return;
+      setTaskBreakdown(buildTaskBreakdown(tasks));
+      setLoading(false);
+    }
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* AI Status Card */}
-        <div className="lg:col-span-2 backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-[#1C1C1E]/80">
-          <div className="flex items-center justify-between">
+    loadTasks();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const missionCompletion = useMemo(
+    () => `${missionPreview.completedTasks} / ${missionPreview.totalTasks} completed`,
+    []
+  );
+
+  return (
+    <div className="space-y-6 pb-28">
+      <motion.section
+        {...cardMotion}
+        className="relative overflow-hidden rounded-[2rem] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_26%),linear-gradient(180deg,rgba(11,11,14,0.85)_0%,rgba(5,5,7,0.92)_100%)] p-5 shadow-[0_35px_80px_rgba(0,0,0,0.42)] sm:p-6"
+      >
+        <div className="pointer-events-none absolute inset-0 hos-grid-overlay opacity-25" />
+        <div className="pointer-events-none absolute right-[-18%] top-[-8%] h-72 w-72 rounded-full border border-white/8 opacity-35" />
+        <div className="pointer-events-none absolute right-[-8%] top-[12%] h-56 w-56 rounded-full border border-[#E8D7AA]/12 opacity-60" />
+        <div className="pointer-events-none absolute right-[7%] top-[14%] h-20 w-20 rounded-full bg-[#E8D7AA]/20 blur-2xl" />
+
+        <div className="relative z-10 flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03]">
+              <img src="/hos-logo.png" alt="HOS Labs" className="h-8 w-auto object-contain" />
+            </div>
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-medium uppercase tracking-widest text-gray-500">AI Receptionist Status</span>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${isAiActive
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-                  }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isAiActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
-                  {isAiActive ? 'Online' : 'Offline'}
-                </span>
-              </div>
-              <p className="text-xl font-semibold text-white font-[Manrope]">
-                {isAiActive ? 'Your AI is actively handling inquiries' : 'Your AI Receptionist is currently offline'}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Toggle to {isAiActive ? 'disable' : 'enable'} 24/7 lead qualification
-              </p>
+              <p className="text-[10px] uppercase tracking-[0.36em] text-[#E8D7AA]/86">HOS Labs</p>
+              <p className="mt-1 text-sm text-white/48">Internal command center</p>
             </div>
+          </div>
 
-            <button
-              data-testid="ai-status-toggle"
-              onClick={toggleAiStatus}
-              className={`relative w-16 h-9 rounded-full transition-all duration-300 ${isAiActive
-                ? 'bg-[#C5A059] shadow-[0_0_20px_rgba(197,160,89,0.4)]'
-                : 'bg-gray-700'
-                }`}
-            >
-              <span
-                className={`absolute top-1 left-1 w-7 h-7 rounded-full bg-white shadow-lg transform transition-transform duration-300 flex items-center justify-center ${isAiActive ? 'translate-x-7' : 'translate-x-0'
-                  }`}
-              >
-                <Power className={`w-4 h-4 ${isAiActive ? 'text-[#C5A059]' : 'text-gray-400'}`} />
-              </span>
+          <div className="flex items-center gap-3">
+            <button className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/76">
+              <BellRing className="h-5 w-5" />
+            </button>
+            <button className="hos-gold-glow flex h-11 w-11 items-center justify-center rounded-full border border-[#E8D7AA]/18 bg-[#121214] text-base font-medium text-white">
+              A
             </button>
           </div>
         </div>
 
-        {/* Service Status Card */}
-        <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-[#1C1C1E]/80">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-medium uppercase tracking-widest text-gray-500">Service Status</span>
-            <Wifi className="w-4 h-4 text-gray-500" />
+        <div className="relative z-10 mt-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-[#E8D7AA]/82">Mission Control</p>
+            <h1 className="mt-4 text-[2.6rem] font-semibold leading-[0.94] tracking-[-0.06em] text-white sm:text-[3.15rem]">
+              Good morning, Abdoul.
+            </h1>
+            <p className="mt-3 max-w-xl text-base leading-7 text-white/58 sm:text-lg">
+              Here&apos;s what changed while you were away.
+            </p>
           </div>
-          <div className="space-y-3">
-            {displayIntegrations.map((integration: any) => (
-              <div key={integration.type} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${integration.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-500'
-                    }`}>
-                    {getIntegrationIcon(integration.type)}
-                  </div>
-                  <span className="text-sm text-white">{integration.name || integration.type}</span>
+
+          <div className="inline-flex items-center gap-3 self-start rounded-[1.25rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-white/76 backdrop-blur-md">
+            <Clock3 className="h-4 w-4 text-[#E8D7AA]" />
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-white/42">Since last check-in</p>
+              <p className="mt-1 text-sm">10h ago</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 border-t border-white/6 pt-5 lg:grid-cols-4">
+          {overviewMetrics.map((metric) => {
+            const Icon = metric.icon;
+
+            return (
+              <div key={metric.label} className="flex items-start gap-3 rounded-[1.4rem] border border-white/6 bg-white/[0.02] p-4">
+                <div className="rounded-2xl bg-white/[0.03] p-2.5 text-[#E8D7AA]">
+                  <Icon className="h-4 w-4" />
                 </div>
-                {integration.is_active ? (
-                  <Wifi className="w-4 h-4 text-emerald-400" />
-                ) : (
-                  <WifiOff className="w-4 h-4 text-gray-500" />
-                )}
+                <div>
+                  <p className="text-3xl font-semibold tracking-[-0.04em] text-white">{metric.value}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.26em] text-white/42">{metric.label}</p>
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      </div>
+      </motion.section>
 
-      {/* Live Activity Feed */}
-      <div className="backdrop-blur-3xl bg-[#1C1C1E]/60 border border-white/5 rounded-3xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 hover:bg-[#1C1C1E]/80">
-        <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <h2 className="text-lg font-semibold text-white font-[Manrope]">Live Activity Feed</h2>
-          </div>
-          <span className="text-xs text-gray-500 uppercase tracking-widest">Real-time</span>
-        </div>
+      <motion.section
+        {...cardMotion}
+        transition={{ ...cardMotion.transition, delay: 0.08 }}
+        className="grid gap-4 xl:grid-cols-[1.45fr_0.82fr]"
+      >
+        <div className="hos-panel rounded-[2rem] p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/46">
+                <Target className="h-3.5 w-3.5 text-[#E8D7AA]" />
+                {missionPreview.label}
+              </div>
+              <h2 className="mt-5 text-[2rem] font-semibold tracking-[-0.05em] text-white">{missionPreview.title}</h2>
+              <p className="mt-3 text-white/52">Deadline: {missionPreview.deadline}</p>
+            </div>
 
-        {activities.length === 0 ? (
-          <div className="p-12 text-center">
-            <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500">No activity yet. Your AI will log events here.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
-            {activities.map((activity) => (
+            <div className="hidden h-28 w-28 items-center justify-center rounded-full border border-white/8 bg-[#08090B] xl:flex">
               <div
-                key={activity.id}
-                className="px-6 py-4 flex items-start gap-4 hover:bg-white/[0.02] transition-colors"
+                className="relative flex h-20 w-20 items-center justify-center rounded-full"
+                style={{
+                  background: `conic-gradient(#E8D7AA ${missionPreview.progress}%, rgba(255,255,255,0.08) 0)`,
+                }}
               >
-                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0">
-                  {getActivityIcon(activity.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">{activity.title}</p>
-                  {activity.description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{activity.description}</p>
+                <div className="absolute inset-[10px] rounded-full bg-[#08090B]" />
+                <span className="relative z-10 text-lg font-semibold text-white">{missionPreview.progress}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-7">
+            <div className="flex items-center justify-between text-sm text-white/62">
+              <span>Progress</span>
+              <span className="text-3xl font-semibold tracking-[-0.04em] text-[#E8D7AA]">{missionPreview.progress}%</span>
+            </div>
+            <div className="mt-4 h-4 rounded-full bg-white/8">
+              <motion.div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#F7E6BB_0%,#E8D7AA_100%)]"
+                initial={{ width: 0 }}
+                animate={{ width: `${missionPreview.progress}%` }}
+                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between text-sm text-white/52">
+              <span>{missionCompletion}</span>
+              <span>{missionPreview.remainingDays} days left</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="hos-panel rounded-[2rem] p-5 sm:p-6">
+          <p className="text-[11px] uppercase tracking-[0.33em] text-white/44">Mission Status</p>
+          <h3 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-white">On Track</h3>
+          <div className="relative mt-6 flex h-[15.5rem] items-center justify-center overflow-hidden rounded-[1.8rem] border border-white/6 bg-[#070709]">
+            <div className="absolute h-56 w-56 rounded-full border border-white/6" />
+            <div className="absolute h-44 w-44 rounded-full border border-white/6" />
+            <div className="absolute h-32 w-32 rounded-full border border-white/6" />
+            <div className="absolute h-20 w-20 rounded-full border border-white/6" />
+            <div className="absolute h-5 w-5 rounded-full bg-[#E8D7AA] shadow-[0_0_35px_rgba(232,215,170,0.75)]" />
+            <div className="absolute left-[20%] top-[24%] h-3 w-3 rounded-full bg-[#E8D7AA]/82" />
+            <div className="absolute right-[24%] top-[36%] h-2.5 w-2.5 rounded-full bg-white/68" />
+            <div className="absolute bottom-[22%] right-[34%] h-3 w-3 rounded-full bg-[#E8D7AA]/68" />
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section
+        {...cardMotion}
+        transition={{ ...cardMotion.transition, delay: 0.14 }}
+        className="hos-panel rounded-[2rem] p-5 sm:p-6"
+      >
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.33em] text-white/44">Recent Activity</p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Team movement across the stack</h3>
+          </div>
+          <button className="text-sm text-white/56 transition-colors hover:text-white">View all</button>
+        </div>
+
+        <div className="space-y-0">
+          {missionActivities.map((item, index) => {
+            const Icon = activityIcons[item.type];
+
+            return (
+              <div key={item.id} className="grid grid-cols-[auto_1fr_auto] gap-4 py-4">
+                <div className="relative flex w-10 justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[#0B0B0D] text-[#E8D7AA]">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  {index !== missionActivities.length - 1 && (
+                    <div className="absolute top-10 h-[calc(100%+0.25rem)] w-px bg-white/10" />
                   )}
                 </div>
-                <span className="text-xs text-gray-600 flex-shrink-0">
-                  {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div className="border-b border-white/6 pb-4 last:border-b-0">
+                  <p className="text-base leading-7 text-white">{item.action}</p>
+                  <p className="mt-1 text-sm text-white/46">{item.category}</p>
+                </div>
+                <div className="border-b border-white/6 pb-4 text-right text-sm text-white/36 last:border-b-0">
+                  {item.timestamp}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.section>
+
+      <motion.section
+        {...cardMotion}
+        transition={{ ...cardMotion.transition, delay: 0.2 }}
+        className="grid gap-4 xl:grid-cols-3"
+      >
+        <div className="hos-panel rounded-[2rem] p-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Weekly Progress</p>
+            <Sparkles className="h-4 w-4 text-[#E8D7AA]" />
+          </div>
+          <div className="mt-6">
+            <div className="text-6xl font-semibold tracking-[-0.07em] text-white">72%</div>
+            <p className="mt-2 text-white/58">Overall Progress</p>
+          </div>
+          <div className="mt-5">
+            <ProgressGraph />
+          </div>
+          <p className="mt-4 text-sm text-emerald-300">+12% vs last week</p>
+        </div>
+
+        <div className="hos-panel rounded-[2rem] p-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Tasks Overview</p>
+            <ListTodo className="h-4 w-4 text-[#E8D7AA]" />
+          </div>
+
+          {loading ? (
+            <div className="mt-8 h-60 rounded-[1.6rem] bg-white/[0.03] hos-shimmer" />
+          ) : (
+            <div className="mt-6 flex flex-col items-center gap-6 xl:flex-row xl:items-start xl:justify-between">
+              <CircularBreakdown {...taskBreakdown} />
+              <div className="grid flex-1 gap-3">
+                {[
+                  { label: 'In Progress', value: taskBreakdown.inProgress, color: 'bg-[#E8D7AA]' },
+                  { label: 'Not Started', value: taskBreakdown.notStarted, color: 'bg-[#8E939D]' },
+                  { label: 'Completed', value: taskBreakdown.completed, color: 'bg-[#8EB391]' },
+                  { label: 'On Hold', value: taskBreakdown.onHold, color: 'bg-[#CB8671]' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between rounded-[1.2rem] border border-white/6 bg-white/[0.03] px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
+                      <span className="text-sm text-white/66">{item.label}</span>
+                    </div>
+                    <span className="text-lg font-semibold text-white">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="hos-panel rounded-[2rem] p-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-white/44">Upcoming Deadlines</p>
+            <Clock3 className="h-4 w-4 text-[#E8D7AA]" />
+          </div>
+          <div className="mt-6 space-y-5">
+            {deadlinePreview.map((item, index) => (
+              <div key={`${item.label}-${item.task}`} className="grid grid-cols-[4.5rem_1fr] gap-4">
+                <div className="relative">
+                  <p className={`text-sm ${index === 0 ? 'text-[#E8D7AA]' : 'text-white/56'}`}>{item.label}</p>
+                  {index !== deadlinePreview.length - 1 && (
+                    <div className="absolute left-[2.2rem] top-7 h-[calc(100%+0.5rem)] w-px bg-white/10" />
+                  )}
+                </div>
+                <div className="relative rounded-[1.2rem] border border-white/6 bg-white/[0.03] px-4 py-3">
+                  <div className="absolute left-0 top-4 h-6 w-px bg-[#E8D7AA]" />
+                  <p className="text-sm text-white">{item.task}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.25em] text-white/36">{item.owner}</p>
+                </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      </motion.section>
     </div>
   );
-};
-
-export default Overview;
+}

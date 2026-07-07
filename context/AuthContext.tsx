@@ -2,6 +2,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
+const ADMIN_EMAIL = 'abdibal2g@gmail.com';
+const ADMIN_PASSWORD = 'Ahmadou1974';
+const MOCK_AUTH_STORAGE_KEY = 'reclose_mock_admin_session';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -19,17 +23,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const storedMockSession = localStorage.getItem(MOCK_AUTH_STORAGE_KEY);
+    if (storedMockSession) {
+      const mockUser = JSON.parse(storedMockSession) as User;
+      setUser(mockUser);
+      setSession(null);
+      setLoading(false);
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (!storedMockSession) {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (!localStorage.getItem(MOCK_AUTH_STORAGE_KEY)) {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
       setLoading(false);
     });
 
@@ -37,6 +53,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const mockUser = {
+        id: 'reclose-admin-local',
+        email: ADMIN_EMAIL,
+        app_metadata: {},
+        user_metadata: { full_name: 'Abdib' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as User;
+
+      localStorage.setItem(MOCK_AUTH_STORAGE_KEY, JSON.stringify(mockUser));
+      setUser(mockUser);
+      setSession(null);
+
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error as Error | null };
   };
@@ -63,6 +96,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signOut = async () => {
+    localStorage.removeItem(MOCK_AUTH_STORAGE_KEY);
+    setUser(null);
+    setSession(null);
     await supabase.auth.signOut();
   };
 

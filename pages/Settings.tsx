@@ -1,196 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Bot, Sparkles } from 'lucide-react';
-import { supabase, Receptionist } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from 'react';
+import { Save, Lock, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { useAuth } from '../context/AuthContext';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
-  const [receptionist, setReceptionist] = useState<Receptionist | null>(null);
-  const [personality, setPersonality] = useState('');
-  const [aiName, setAiName] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [newPassword, setNewPassword] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchReceptionist();
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
     }
-  }, [user]);
-
-  const fetchReceptionist = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('receptionists')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (data) {
-        setReceptionist(data);
-        setPersonality(data.personality || '');
-        setAiName(data.name || '');
-      }
-    } catch (error) {
-      console.error('Error fetching receptionist:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
 
     setSaving(true);
     try {
-      if (receptionist) {
-        // Update existing
-        const { error } = await supabase
-          .from('receptionists')
-          .update({ personality, name: aiName })
-          .eq('id', receptionist.id);
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
 
-        if (error) throw error;
-      } else {
-        // Create new
-        const { data, error } = await supabase
-          .from('receptionists')
-          .insert({ user_id: user.id, personality, name: aiName, is_active: false })
-          .select()
-          .single();
-
-        if (error) throw error;
-        if (data) setReceptionist(data);
-      }
-
-      toast.success('Settings saved successfully');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Failed to save settings');
+      if (error) throw error;
+      toast.success('Password updated successfully');
+      setNewPassword('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update password');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-[#C5A059] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div data-testid="settings-page" className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
+    <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight font-[Manrope]">Settings</h1>
-        <p className="text-gray-500 mt-1">Configure your AI Receptionist personality</p>
+        <h1 className="text-2xl font-bold text-white mb-1">Settings</h1>
+        <p className="text-sm text-gray-500">Manage your admin account</p>
       </div>
 
-      {/* Main Settings Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* AI Preview */}
-        <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-6 flex flex-col items-center text-center">
-          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#C5A059]/30 mb-4 relative">
-            <img
-              src="https://images.unsplash.com/photo-1770062422145-c4c08e1f5cc5?crop=entropy&cs=srgb&fm=jpg&q=85&w=200"
-              alt="AI Receptionist"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          </div>
-          <h3 className="text-lg font-semibold text-white font-[Manrope]">{aiName || 'AI Receptionist'}</h3>
-          <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Virtual Assistant</p>
-          <div className="mt-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#C5A059]" />
-            <span className="text-sm text-[#C5A059]">{receptionist?.is_active ? 'Active' : 'Inactive'}</span>
-          </div>
-        </div>
-
-        {/* Settings Form */}
-        <div className="lg:col-span-2 backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-6 space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-            <div className="w-10 h-10 rounded-xl bg-[#C5A059]/10 border border-[#C5A059]/20 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-[#C5A059]" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-white font-[Manrope]">AI Personality Configuration</h2>
-              <p className="text-xs text-gray-500">Customize how your AI interacts with leads</p>
-            </div>
-          </div>
-
-          {/* AI Name */}
+      <div className="bg-[#111] border border-white/5 rounded-2xl p-6 md:p-8">
+        <h2 className="text-lg font-semibold text-white mb-6">Security</h2>
+        
+        <form onSubmit={handleUpdatePassword} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium uppercase tracking-widest text-gray-500 mb-2">
-              AI Name
-            </label>
-            <input
-              data-testid="ai-name-input"
+            <label className="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
+            <input 
               type="text"
-              value={aiName}
-              onChange={(e) => setAiName(e.target.value)}
-              placeholder="e.g., Sarah, Alex, Jordan"
-              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-[#C5A059]/50 focus:ring-1 focus:ring-[#C5A059]/20 transition-all"
+              disabled
+              value={user?.email || ''}
+              className="w-full bg-black/50 border border-white/5 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed"
             />
           </div>
 
-          {/* Personality */}
           <div>
-            <label className="block text-xs font-medium uppercase tracking-widest text-gray-500 mb-2">
-              Personality Description
-            </label>
-            <textarea
-              data-testid="personality-input"
-              value={personality}
-              onChange={(e) => setPersonality(e.target.value)}
-              placeholder="Describe how you want your AI to behave. E.g., 'Professional and friendly, always addresses leads by name, asks qualifying questions about their budget and timeline...'"
-              rows={6}
-              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-[#C5A059]/50 focus:ring-1 focus:ring-[#C5A059]/20 transition-all resize-none"
-            />
-            <p className="text-xs text-gray-600 mt-2">This will guide how your AI receptionist communicates with leads.</p>
+            <label className="block text-sm font-medium text-gray-400 mb-2">New Password</label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600" />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password (min. 6 characters)"
+                className="w-full pl-12 pr-4 py-3 bg-black border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-brand-orange transition-colors"
+              />
+            </div>
           </div>
 
-          {/* Save Button */}
           <button
-            data-testid="save-settings-btn"
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full py-4 rounded-xl bg-[#C5A059] text-black font-semibold hover:bg-[#C5A059]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(197,160,89,0.2)]"
+            type="submit"
+            disabled={saving || !newPassword}
+            className="w-full py-3 bg-white hover:bg-gray-200 text-black rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
           >
             {saving ? (
-              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <Save className="w-5 h-5" />
-                Save Settings
+                <Save className="w-4 h-4" />
+                Update Password
               </>
             )}
           </button>
-        </div>
-      </div>
-
-      {/* Tips Section */}
-      <div className="backdrop-blur-xl bg-[#C5A059]/5 border border-[#C5A059]/20 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-white font-[Manrope] mb-3">Tips for AI Personality</h3>
-        <ul className="space-y-2 text-sm text-gray-400">
-          <li className="flex items-start gap-2">
-            <span className="text-[#C5A059] mt-1">•</span>
-            Be specific about the tone (professional, casual, friendly)
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-[#C5A059] mt-1">•</span>
-            Include key qualifying questions you want the AI to ask
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-[#C5A059] mt-1">•</span>
-            Mention your business name and services for context
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-[#C5A059] mt-1">•</span>
-            Specify how to handle common objections or questions
-          </li>
-        </ul>
+        </form>
       </div>
     </div>
   );

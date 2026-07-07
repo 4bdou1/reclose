@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface LogoProps {
@@ -6,9 +5,18 @@ interface LogoProps {
   showText?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   theme?: 'light' | 'dark';
+  animateTextReveal?: boolean;
+  textVisible?: boolean;
 }
 
-const Logo: React.FC<LogoProps> = ({ className = "", showText = true, size = 'md', theme = 'dark' }) => {
+const Logo: React.FC<LogoProps> = ({
+  className = "",
+  showText = true,
+  size = 'md',
+  theme = 'dark',
+  animateTextReveal = false,
+  textVisible = true,
+}) => {
   const dimensions = {
     sm: { icon: 'w-8 h-8', text: 'text-lg', subText: 'text-[9px]' },
     md: { icon: 'w-10 h-10', text: 'text-2xl', subText: 'text-[11px]' },
@@ -21,8 +29,8 @@ const Logo: React.FC<LogoProps> = ({ className = "", showText = true, size = 'md
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <div className="relative">
-        <div className="absolute inset-0 bg-brand-blue opacity-20 blur-lg rounded-lg"></div>
+      <div className={`relative shrink-0 ${animateTextReveal ? 'animate-brand-icon' : ''}`}>
+        <div className="absolute inset-0 rounded-lg bg-brand-blue opacity-20 blur-lg" />
         <svg
           viewBox="0 0 100 80"
           className={`${dimensions.icon} relative z-10`}
@@ -53,16 +61,28 @@ const Logo: React.FC<LogoProps> = ({ className = "", showText = true, size = 'md
       </div>
 
       {showText && (
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span className={`${dimensions.text} font-bold tracking-tight ${textColor} uppercase`}>
-              RE<span className="text-brand-blue">close</span>
-            </span>
-            <span className={`${sublineColor} font-bold`}>.AI</span>
-          </div>
-          <div className={`${dimensions.subText} flex items-center gap-1 mt-[-4px] ml-[2px] tracking-[0.2em] uppercase`}>
-            <span className="font-bold text-[#C5A059]">HPF</span>
-            <span className="font-light italic text-[#C5A059]/80">&Co</span>
+        <div className={animateTextReveal ? 'brand-text-mask' : ''}>
+          <div
+            className={`flex flex-col ${
+              animateTextReveal ? 'brand-text-track' : ''
+            } ${
+              animateTextReveal
+                ? textVisible
+                  ? 'brand-text-visible'
+                  : 'brand-text-hidden'
+                : ''
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className={`${dimensions.text} font-bold tracking-tight ${textColor} uppercase`}>
+                RE<span className="text-brand-blue">close</span>
+              </span>
+              <span className={`${sublineColor} font-bold`}>.AI</span>
+            </div>
+            <div className={`${dimensions.subText} mt-[-4px] ml-[2px] flex items-center gap-1 uppercase tracking-[0.2em]`}>
+              <span className="font-bold text-[#C5A059]">HPF</span>
+              <span className="font-light italic text-[#C5A059]/80">&Co</span>
+            </div>
           </div>
         </div>
       )}

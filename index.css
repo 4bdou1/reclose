@@ -1,0 +1,244 @@
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: #050505;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top, rgba(214, 179, 107, 0.08), transparent 32%),
+    #050505;
+  color: #ffffff;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: #d6b36b;
+  color: #111111;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.lux-panel {
+  background: linear-gradient(180deg, rgba(17, 17, 22, 0.9) 0%, rgba(8, 8, 11, 0.78) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 24px 90px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.lux-panel-soft {
+  background: rgba(9, 9, 12, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.lux-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+}
+
+.lux-noise {
+  position: relative;
+}
+
+.lux-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 0.6px, transparent 0.6px);
+  background-size: 16px 16px;
+  opacity: 0.08;
+  mix-blend-mode: soft-light;
+}
+
+.lux-card-hover {
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 280ms ease,
+    box-shadow 280ms ease,
+    background-color 280ms ease;
+}
+
+.lux-card-hover:hover {
+  transform: translateY(-6px);
+  border-color: rgba(214, 179, 107, 0.24);
+  box-shadow:
+    0 32px 120px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(214, 179, 107, 0.08);
+}
+
+.lux-button {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms ease,
+    color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.lux-button:hover {
+  transform: translateY(-2px);
+}
+
+.lux-marquee {
+  animation: luxMarquee 48s linear infinite;
+}
+
+.float-slow {
+  animation: floatY 8s ease-in-out infinite;
+}
+
+.hos-app-shell {
+  background:
+    radial-gradient(circle at top center, rgba(232, 215, 170, 0.12), transparent 24%),
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 18%),
+    #030303;
+}
+
+.hos-panel {
+  background:
+    linear-gradient(180deg, rgba(18, 18, 22, 0.88) 0%, rgba(9, 9, 12, 0.74) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.hos-panel-soft {
+  background:
+    linear-gradient(180deg, rgba(20, 20, 24, 0.7) 0%, rgba(8, 8, 11, 0.58) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.hos-grid-overlay {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+.hos-gold-glow {
+  box-shadow:
+    0 0 0 1px rgba(232, 215, 170, 0.16),
+    0 18px 35px rgba(232, 215, 170, 0.12);
+}
+
+.hos-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.hos-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: hosShimmer 1.6s infinite;
+}
+
+.brand-text-mask {
+  overflow: hidden;
+}
+
+.brand-text-track {
+  transition:
+    transform 720ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 360ms ease;
+  will-change: transform, opacity;
+}
+
+.brand-text-visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.brand-text-hidden {
+  transform: translateX(-118%);
+  opacity: 0;
+}
+
+.animate-brand-icon {
+  opacity: 0;
+  animation: brandIconIn 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes luxMarquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes floatY {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes brandIconIn {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes hosShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
