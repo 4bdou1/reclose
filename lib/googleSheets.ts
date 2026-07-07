@@ -15,14 +15,17 @@ export interface Task {
 }
 
 export interface Research {
-  id: string;
-  title: string;
-  type: string;
-  summary: string;
-  owner: string;
-  source_link: string;
-  tags: string;
-  date_added: string;
+  date: string;
+  business_name: string;
+  category: string;
+  city: string;
+  contact_method: string;
+  time_of_contact: string;
+  'researched_detail_(30s_note)': string;
+  response: string;
+  'follow-up_due': string;
+  'follow-up_sent?': string;
+  'outcome_/_notes': string;
 }
 
 export interface FileData {
@@ -55,20 +58,21 @@ export interface Activity {
 /**
  * Parses a 2D array from Google Sheets API into an array of objects based on the header row.
  */
-function parseSheetData<T>(values: any[][]): T[] {
-  if (!values || values.length < 2) return [];
+function parseSheetData<T>(values: any[][], headerRowIndex: number = 0): T[] {
+  if (!values || values.length <= headerRowIndex) return [];
   
-  const headers = values[0];
-  const rows = values.slice(1);
+  const headers = values[headerRowIndex];
+  const rows = values.slice(headerRowIndex + 1);
   
   return rows.map((row, rIdx) => {
     const obj: any = {};
     headers.forEach((header: string, index: number) => {
+      if (!header) return;
       const key = header.toLowerCase().trim().replace(/ /g, '_');
       obj[key] = row[index] || '';
     });
-    // Add implicit row index (+2 because values.slice(1) means rIdx 0 is row 2)
-    obj._rowIndex = rIdx + 2; 
+    // Add implicit row index (+2 because values.slice(headerRowIndex + 1) means rIdx 0 is row headerRowIndex+2)
+    obj._rowIndex = headerRowIndex + rIdx + 2; 
     return obj as T;
   });
 }
@@ -76,7 +80,7 @@ function parseSheetData<T>(values: any[][]): T[] {
 /**
  * Fetch a specific sheet tab using the Google Sheets API v4.
  */
-export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, accessToken: string): Promise<T[]> {
+export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, accessToken: string, headerRowIndex: number = 0): Promise<T[]> {
   if (!spreadsheetId || !accessToken) return [];
   
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:Z`;
@@ -92,7 +96,7 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
   }
 
   const data = await response.json();
-  return parseSheetData<T>(data.values || []);
+  return parseSheetData<T>(data.values || [], headerRowIndex);
 }
 
 /**
@@ -267,7 +271,7 @@ export async function deleteRow(sheetName: string, rowIndex: number, spreadsheet
 
 export const googleSheetsAPI = {
   getTasks: (id: string, token: string) => fetchSheet<Task>('Tasks', id, token),
-  getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token),
+  getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token, 2),
   getFiles: (id: string, token: string) => fetchSheet<FileData>('Files', id, token),
   getGoals: (id: string, token: string) => fetchSheet<Goal>('Goals', id, token),
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
