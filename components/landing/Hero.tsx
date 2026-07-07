@@ -22,8 +22,8 @@ const Hero: React.FC = () => {
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(214,179,107,0.16),transparent_32%)]" />
         <div className="absolute left-[6%] top-[8%] h-40 w-40 rounded-full border border-black/6" />
-        <div className="absolute right-[8%] top-[18%] h-[24rem] w-[24rem] rounded-full bg-[#D6B36B]/12 blur-[120px]" />
-        <div className="absolute bottom-10 left-[-5%] h-[20rem] w-[20rem] rounded-full bg-cyan-500/10 blur-[140px]" />
+        <div className="absolute right-[8%] top-[18%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgba(214,179,107,0.12),transparent_70%)]" />
+        <div className="absolute bottom-10 left-[-5%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,rgba(6,182,212,0.10),transparent_70%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.55)_0%,rgba(245,246,247,0)_38%)]" />
       </div>
 

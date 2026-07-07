@@ -66,9 +66,9 @@ const LandingPage: React.FC = () => {
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute inset-0 bg-[#2F2F33]" />
             <div className="absolute inset-0 lux-grid opacity-30" />
-            <div className="absolute left-[-10%] top-[-5%] h-[32rem] w-[32rem] rounded-full bg-[#C5A059]/14 blur-[160px]" />
-            <div className="absolute right-[-12%] top-[12%] h-[28rem] w-[28rem] rounded-full bg-cyan-400/10 blur-[180px]" />
-            <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[50rem] -translate-x-1/2 rounded-full bg-white/4 blur-[220px]" />
+            <div className="absolute left-[-10%] top-[-5%] h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(197,160,89,0.14),transparent_70%)]" />
+            <div className="absolute right-[-12%] top-[12%] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.10),transparent_70%)]" />
+            <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[50rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.04),transparent_70%)]" />
           </div>
           <div className="relative z-10">
             <LuxuryTicker />
