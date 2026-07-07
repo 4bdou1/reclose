@@ -55,6 +55,19 @@ export interface Activity {
   timestamp: string;
 }
 
+export interface AnalyticsData {
+  overview: {
+    totalOutreaches: string;
+    totalResponses: string;
+    noAnswerRate: string;
+    responseRate: string;
+    followUpsPending: string;
+  };
+  byCategory: { category: string; total: string; yes: string; noAnswer: string; responseRate: string }[];
+  byContactMethod: { method: string; total: string; yes: string; noAnswer: string; responseRate: string }[];
+  byTimeSlot: { timeSlot: string; total: string; yes: string; noAnswer: string; responseRate: string }[];
+}
+
 /**
  * Parses a 2D array from Google Sheets API into an array of objects based on the header row.
  */
@@ -97,6 +110,91 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
 
   const data = await response.json();
   return parseSheetData<T>(data.values || [], headerRowIndex);
+}
+
+/**
+ * Fetch and parse the highly-custom Analytics Dashboard tab.
+ */
+export async function getAnalyticsDashboard(spreadsheetId: string, accessToken: string): Promise<AnalyticsData | null> {
+  if (!spreadsheetId || !accessToken) return null;
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Analytics!A:K`;
+  
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    if (response.status === 400) return null; // Sheet probably doesn't exist
+    throw new Error(`Failed to fetch Analytics sheet: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const values = data.values || [];
+  
+  const analytics: AnalyticsData = {
+    overview: { totalOutreaches: '0', totalResponses: '0', noAnswerRate: '0%', responseRate: '0%', followUpsPending: '0' },
+    byCategory: [],
+    byContactMethod: [],
+    byTimeSlot: []
+  };
+
+  let currentSection = '';
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    if (!row || row.length === 0) {
+      currentSection = '';
+      continue;
+    }
+    
+    // Google Sheets API strips trailing empty cells, so we just filter out the empty ones caused by merged cells
+    const cells = row.map(c => String(c).trim()).filter(c => c !== '');
+    const firstCell = String(row[0] || '').trim();
+
+    // 1. Overview Metrics
+    if (cells.some(c => c.includes('Total Outreaches'))) {
+      const nextRow = values[i + 1] || [];
+      const nums = nextRow.map(c => String(c).trim()).filter(c => c !== '');
+      if (nums.length >= 4) {
+        analytics.overview.totalOutreaches = nums[0];
+        analytics.overview.totalResponses = nums[1];
+        analytics.overview.noAnswerRate = nums[2];
+        analytics.overview.responseRate = nums[3];
+      }
+    }
+
+    // 2. Pending Follow-Ups
+    if (firstCell.includes('Follow-Ups Pending')) {
+      const nextRow = values[i + 1] || [];
+      const nums = nextRow.map(c => String(c).trim()).filter(c => c !== '');
+      if (nums.length >= 1) {
+        analytics.overview.followUpsPending = nums[0];
+      }
+    }
+
+    // 3. Identify Sections
+    if (firstCell === 'By Category') { currentSection = 'category'; i++; continue; }
+    if (firstCell === 'By Contact Method') { currentSection = 'method'; i++; continue; }
+    if (firstCell === 'By Time Slot') { currentSection = 'time'; i++; continue; }
+
+    // 4. Parse Section Data
+    if (currentSection && cells.length >= 5 && !cells[0].includes('Category') && !cells[0].includes('Method') && !cells[0].includes('Time Slot')) {
+      const entry = {
+        name: cells[0],
+        total: cells[1],
+        yes: cells[2],
+        noAnswer: cells[3],
+        responseRate: cells[4]
+      };
+      
+      if (currentSection === 'category') analytics.byCategory.push({ category: entry.name, total: entry.total, yes: entry.yes, noAnswer: entry.noAnswer, responseRate: entry.responseRate });
+      if (currentSection === 'method') analytics.byContactMethod.push({ method: entry.name, total: entry.total, yes: entry.yes, noAnswer: entry.noAnswer, responseRate: entry.responseRate });
+      if (currentSection === 'time') analytics.byTimeSlot.push({ timeSlot: entry.name, total: entry.total, yes: entry.yes, noAnswer: entry.noAnswer, responseRate: entry.responseRate });
+    }
+  }
+
+  return analytics;
 }
 
 /**
@@ -275,6 +373,7 @@ export const googleSheetsAPI = {
   getFiles: (id: string, token: string) => fetchSheet<FileData>('Files', id, token),
   getGoals: (id: string, token: string) => fetchSheet<Goal>('Goals', id, token),
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
+  getAnalytics: (id: string, token: string) => getAnalyticsDashboard(id, token),
   
   addTask: (taskObj: Record<string, any>, id: string, token: string) => appendRow('Tasks', taskObj, id, token),
   addResearch: (data: Record<string, any>, id: string, token: string) => appendRow('Research', data, id, token, 3),
