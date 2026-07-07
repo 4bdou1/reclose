@@ -24,6 +24,27 @@ const getResponseBadge = (response: string) => {
   }
 };
 
+const parseToInputDate = (sheetDate: string) => {
+  if (!sheetDate) return '';
+  const parts = sheetDate.split('/');
+  if (parts.length === 3) {
+    const d = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    const y = parts[2];
+    return `${y}-${m}-${d}`;
+  }
+  return sheetDate;
+};
+
+const formatToSheetDate = (inputDate: string) => {
+  if (!inputDate) return '';
+  const parts = inputDate.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return inputDate;
+};
+
 const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: number }, onUpdate: (row: any) => void }) => {
   const [data, setData] = useState(item);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -66,10 +87,9 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       <td className="p-2 border-b border-gray-100 relative">
         {isSyncing && <div className="absolute top-2 left-2"><Loader2 className="w-3 h-3 animate-spin text-gray-400" /></div>}
         <input 
-          type="text" 
-          placeholder="DD/MM/YYYY"
-          value={data.date || ''} 
-          onChange={e => handleChange('date', e.target.value)}
+          type="date" 
+          value={parseToInputDate(data.date)} 
+          onChange={e => handleChange('date', formatToSheetDate(e.target.value))}
           onBlur={() => handleBlur('date')}
           className="w-full bg-transparent text-xs text-gray-500 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
         />
@@ -161,10 +181,9 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       {/* Follow-Up Due */}
       <td className="p-2 border-b border-gray-100">
         <input 
-          type="text" 
-          placeholder="DD/MM/YYYY"
-          value={data['follow-up_due'] || ''} 
-          onChange={e => handleChange('follow-up_due', e.target.value)}
+          type="date" 
+          value={parseToInputDate(data['follow-up_due'])} 
+          onChange={e => handleChange('follow-up_due', formatToSheetDate(e.target.value))}
           onBlur={() => handleBlur('follow-up_due')}
           className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
         />
