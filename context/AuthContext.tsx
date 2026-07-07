@@ -2,9 +2,11 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-const ADMIN_EMAIL = 'abdibal2g@gmail.com';
-const ADMIN_PASSWORD = 'Ahmadou1974';
-const MOCK_AUTH_STORAGE_KEY = 'reclose_mock_admin_session';
+// Initial allowed emails as a fallback/bootstrap
+const INITIAL_ALLOWED_EMAILS = [
+  'haliluismailibrahim@gmail.com',
+  'abdibal2g@gmail.com'
+];
 
 interface AuthContextType {
   user: User | null;
@@ -23,51 +25,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedMockSession = localStorage.getItem(MOCK_AUTH_STORAGE_KEY);
-    if (storedMockSession) {
-      const mockUser = JSON.parse(storedMockSession) as User;
-      setUser(mockUser);
-      setSession(null);
-      setLoading(false);
-    }
-
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!storedMockSession) {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!localStorage.getItem(MOCK_AUTH_STORAGE_KEY)) {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const isEmailAuthorized = async (email: string): Promise<boolean> => {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (INITIAL_ALLOWED_EMAILS.includes(normalizedEmail)) return true;
+
+    try {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('email')
+        .eq('email', normalizedEmail)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking authorized emails:', error);
+      }
+      return !!data;
+    } catch (err) {
+      console.error('Failed to verify email:', err);
+      return false;
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const mockUser = {
-        id: 'reclose-admin-local',
-        email: ADMIN_EMAIL,
-        app_metadata: {},
-        user_metadata: { full_name: 'Abdib' },
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-      } as User;
-
-      localStorage.setItem(MOCK_AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-      setUser(mockUser);
-      setSession(null);
-
-      return { error: null };
+    const authorized = await isEmailAuthorized(email);
+    if (!authorized) {
+      return { error: new Error('This email is not authorized to access HOS Labs.') };
     }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -75,6 +74,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const authorized = await isEmailAuthorized(email);
+    if (!authorized) {
+      return { error: new Error('This email is not authorized to access HOS Labs.') };
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -96,7 +100,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signOut = async () => {
-    localStorage.removeItem(MOCK_AUTH_STORAGE_KEY);
     setUser(null);
     setSession(null);
     await supabase.auth.signOut();

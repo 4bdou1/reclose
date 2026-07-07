@@ -46,6 +46,12 @@ export interface Goal {
   status: string;
 }
 
+export interface TeamMember {
+  email: string;
+  role?: string;
+  added_at?: string;
+}
+
 export interface Activity {
   id: string;
   action_type: string;
@@ -374,9 +380,11 @@ export const googleSheetsAPI = {
   getGoals: (id: string, token: string) => fetchSheet<Goal>('Goals', id, token),
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
   getAnalytics: (id: string, token: string) => getAnalyticsDashboard(id, token),
+  getTeamMembers: (id: string, token: string) => fetchSheet<TeamMember>('Team', id, token),
   
   addTask: (taskObj: Record<string, any>, id: string, token: string) => appendRow('Tasks', taskObj, id, token),
   addResearch: (data: Record<string, any>, id: string, token: string) => appendRow('Research', data, id, token, 3),
+  addTeamMember: (data: Record<string, any>, id: string, token: string) => appendRow('Team', data, id, token),
   updateTask: (rowIndex: number, taskObj: Record<string, any>, id: string, token: string) => updateRow('Tasks', rowIndex, taskObj, id, token),
   updateResearch: (rowIndex: number, data: Record<string, any>, id: string, token: string) => updateRow('Research', rowIndex, data, id, token, 3),
   deleteTask: (rowIndex: number, id: string, token: string) => deleteRow('Tasks', rowIndex, id, token),
