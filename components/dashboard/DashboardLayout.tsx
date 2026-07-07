@@ -28,9 +28,17 @@ const DashboardLayout: React.FC = () => {
           </div>
         </div>
         
-        <button className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-black/5 hover:text-black transition-colors">
-          <Bell className="w-5 h-5" />
-        </button>
+        <a 
+          href="https://docs.google.com/spreadsheets/d/1pfa-cSewdEBBvZ7OTdVtuZIxWGS9XX6BWyDsvv5WvGM/edit?usp=drivesdk"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-[#0F9D58] bg-[#0F9D58]/10 hover:bg-[#0F9D58]/20 transition-colors"
+          title="Open Google Sheets Database"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H6v-3h4v3zm0-5H6V9h4v3zm6 5h-4v-3h4v3zm0-5h-4V9h4v3z"/>
+          </svg>
+        </a>
       </header>
 
       {/* Main Content Area */}
