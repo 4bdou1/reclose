@@ -271,7 +271,7 @@ export async function deleteRow(sheetName: string, rowIndex: number, spreadsheet
 
 export const googleSheetsAPI = {
   getTasks: (id: string, token: string) => fetchSheet<Task>('Tasks', id, token),
-  getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token, 2),
+  getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token, 3),
   getFiles: (id: string, token: string) => fetchSheet<FileData>('Files', id, token),
   getGoals: (id: string, token: string) => fetchSheet<Goal>('Goals', id, token),
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
