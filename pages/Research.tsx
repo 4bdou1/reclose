@@ -39,10 +39,10 @@ const Research: React.FC = () => {
     const cityMatch = item.city?.toLowerCase()?.includes(searchLower) ?? false;
     const matchesSearch = searchTerm === '' || businessMatch || cityMatch;
     
-    // Check if it's actually an outreach row (has business name or date) to filter out empty rows from bottom of spreadsheet
-    const isRowData = item.business_name || item.date;
+    // Check if the row has any meaningful data to filter out empty rows from bottom of spreadsheet
+    const isNotEmpty = !!(item.business_name || item.date || item.city || item.contact_method);
 
-    return matchesTab && matchesSearch && isRowData;
+    return matchesTab && matchesSearch && isNotEmpty;
   });
 
   return (
