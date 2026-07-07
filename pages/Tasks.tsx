@@ -23,7 +23,7 @@ const Tasks: React.FC = () => {
 
   const filteredTasks = tasks.filter(t => 
     t.task?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    t.owner?.toLowerCase().includes(searchTerm.toLowerCase())
+    t.user?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -75,7 +75,7 @@ const Tasks: React.FC = () => {
       const newTaskObj = {
         id: crypto.randomUUID(),
         task: parsedPreview.task,
-        owner: ownerName,
+        user: ownerName,
         role: 'Team Member',
         status: parsedPreview.status,
         priority: parsedPreview.priority,
@@ -188,7 +188,7 @@ const Tasks: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Owner</label>
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">User</label>
                 <input
                   type="text"
                   value={user?.user_metadata?.full_name || user?.email || 'Unknown User'}
@@ -251,7 +251,7 @@ const Tasks: React.FC = () => {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/80">
                 <th className="p-4 text-xs font-semibold text-gray-500 w-[30%]">Task</th>
-                <th className="p-4 text-xs font-semibold text-gray-500">Owner</th>
+                <th className="p-4 text-xs font-semibold text-gray-500">User</th>
                 <th className="p-4 text-xs font-semibold text-gray-500">Status</th>
                 <th className="p-4 text-xs font-semibold text-gray-500">Deadline</th>
                 <th className="p-4 text-xs font-semibold text-gray-500">Priority</th>
@@ -262,7 +262,7 @@ const Tasks: React.FC = () => {
               {filteredTasks.map((task, idx) => (
                 <tr key={idx} className="hover:bg-gray-50/50 transition-colors group cursor-pointer">
                   <td className="p-4 text-sm font-medium pr-8">{task.task}</td>
-                  <td className="p-4 text-sm text-gray-600 whitespace-nowrap">{task.owner}</td>
+                  <td className="p-4 text-sm text-gray-600 whitespace-nowrap">{task.user}</td>
                   <td className="p-4">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(task.status)}`}>
                       {task.status}
@@ -295,7 +295,7 @@ const Tasks: React.FC = () => {
                    <div className="bg-[#050505] h-full rounded-full" style={{ width: `${task.progress || 0}%` }} />
                 </div>
                 <div className="flex items-center justify-between text-xs mt-4">
-                  <span className="font-medium text-gray-500">Owner: <span className="text-black">{task.owner}</span></span>
+                  <span className="font-medium text-gray-500">User: <span className="text-black">{task.user}</span></span>
                   <span className="font-medium text-gray-500">{task.deadline}</span>
                 </div>
               </div>

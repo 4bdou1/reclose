@@ -1,7 +1,7 @@
 export interface Task {
   id: string;
   task: string;
-  owner: string;
+  user: string;
   role: string;
   status: string;
   priority: string;
