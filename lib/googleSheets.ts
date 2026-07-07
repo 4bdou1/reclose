@@ -94,7 +94,7 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
  * Append a row to a specific sheet tab, intelligently mapping object keys to the sheet's column headers.
  */
 export async function appendRow(sheetName: string, rowData: Record<string, any>, spreadsheetId: string, accessToken: string): Promise<boolean> {
-  if (!spreadsheetId || !accessToken) return false;
+  if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
 
   // 1. Fetch the headers (Row 1) first to know where to put each piece of data
   const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!1:1`;
@@ -103,16 +103,15 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
   });
 
   if (!headerResponse.ok) {
-    console.error(`Failed to fetch headers for ${sheetName}`);
-    return false;
+    const errText = await headerResponse.text();
+    throw new Error(`Failed to fetch headers for ${sheetName}: ${errText}`);
   }
 
   const headerData = await headerResponse.json();
   const headers: string[] = (headerData.values && headerData.values[0]) ? headerData.values[0] : [];
 
   if (headers.length === 0) {
-    console.error(`No headers found in row 1 of sheet ${sheetName}`);
-    return false;
+    throw new Error(`No headers found in row 1 of sheet ${sheetName}. Please ensure your sheet has headers (e.g. Task, User, Status).`);
   }
 
   // 2. Map the rowData object into an array ordered exactly like the headers
@@ -139,8 +138,8 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
   });
 
   if (!appendResponse.ok) {
-    console.error(`Failed to append to sheet ${sheetName}:`, await appendResponse.text());
-    return false;
+    const errText = await appendResponse.text();
+    throw new Error(`Failed to append to sheet ${sheetName}: ${errText}`);
   }
 
   return true;

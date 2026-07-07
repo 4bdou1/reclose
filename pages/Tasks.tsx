@@ -95,8 +95,8 @@ const Tasks: React.FC = () => {
       } else {
         toast.error('Failed to add task');
       }
-    } catch (err) {
-      toast.error('Error adding task');
+    } catch (err: any) {
+      toast.error(err.message || 'Error adding task');
       console.error(err);
     } finally {
       setIsSaving(false);
