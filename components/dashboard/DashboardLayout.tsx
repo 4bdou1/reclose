@@ -1,6 +1,8 @@
-import React from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Microscope, BarChart2, Folder, Bell, Settings as SettingsIcon } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Home, CheckSquare, Microscope, BarChart2, Folder, Bell, Settings as SettingsIcon, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useGoogleAuth } from '../../context/GoogleAuthContext';
 
 const navItems = [
   { label: 'Home', to: '/dashboard', icon: Home },
@@ -13,19 +15,60 @@ const navItems = [
 
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const { logout: googleLogout } = useGoogleAuth();
+  
+  const [showLogoutMenu, setShowLogoutMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowLogoutMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    googleLogout(); // Clears google tokens from local storage
+    await signOut(); // Signs out of Supabase
+    navigate('/auth');
+  };
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#050505] selection:bg-[#050505] selection:text-white pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#FAFAFA]/80 backdrop-blur-xl border-b border-black/5 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 items-center justify-center">
-             <img src="/logo.png" alt="HOS Logo" className="h-8 object-contain dark:invert" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight text-[#050505] leading-none mb-1">HOS Labs</h1>
-            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-medium">Build. Research. Close.</p>
-          </div>
+        <div className="relative" ref={menuRef}>
+          <button 
+            onClick={() => setShowLogoutMenu(!showLogoutMenu)}
+            className="flex items-center gap-3 text-left hover:bg-black/5 p-1 -ml-1 rounded-xl transition-colors"
+          >
+            <div className="flex h-10 items-center justify-center">
+               <img src="/logo.png" alt="HOS Logo" className="h-8 object-contain dark:invert" />
+            </div>
+            <div>
+              <h1 className="text-sm font-bold tracking-tight text-[#050505] leading-none mb-1">HOS Labs</h1>
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-medium">Build. Research. Close.</p>
+            </div>
+          </button>
+
+          {/* Logout Dropdown */}
+          {showLogoutMenu && (
+            <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Log Out
+              </button>
+            </div>
+          )}
         </div>
         
         <a 
