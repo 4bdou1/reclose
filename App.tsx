@@ -27,7 +27,7 @@ import LeadCaptureForm from './components/landing/LeadCaptureForm';
 import Footer from './components/Footer';
 import Navbar from './components/landing/Navbar';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'missing-client-id.apps.googleusercontent.com';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
