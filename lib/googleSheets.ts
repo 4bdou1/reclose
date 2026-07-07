@@ -271,13 +271,13 @@ export async function deleteRow(sheetName: string, rowIndex: number, spreadsheet
 
 export const googleSheetsAPI = {
   getTasks: (id: string, token: string) => fetchSheet<Task>('Tasks', id, token),
-  getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token, 2),
+  getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token, 3),
   getFiles: (id: string, token: string) => fetchSheet<FileData>('Files', id, token),
   getGoals: (id: string, token: string) => fetchSheet<Goal>('Goals', id, token),
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
   
   addTask: (taskObj: Record<string, any>, id: string, token: string) => appendRow('Tasks', taskObj, id, token),
   updateTask: (rowIndex: number, taskObj: Record<string, any>, id: string, token: string) => updateRow('Tasks', rowIndex, taskObj, id, token),
-  updateResearch: (rowIndex: number, data: Record<string, any>, id: string, token: string) => updateRow('Research', rowIndex, data, id, token, 2),
+  updateResearch: (rowIndex: number, data: Record<string, any>, id: string, token: string) => updateRow('Research', rowIndex, data, id, token, 3),
   deleteTask: (rowIndex: number, id: string, token: string) => deleteRow('Tasks', rowIndex, id, token),
 };
