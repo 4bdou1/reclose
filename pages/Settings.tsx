@@ -108,20 +108,13 @@ const Settings: React.FC = () => {
             </p>
             
             {isAuthenticated ? (
-              <button 
-                onClick={logout}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#050505] text-sm font-semibold rounded-lg transition-colors"
-              >
-                Disconnect Account
-              </button>
+              <div className="px-4 py-2 bg-green-500/10 text-green-600 text-sm font-semibold rounded-lg inline-block">
+                Auto-Connected via SSO
+              </div>
             ) : (
-              <button 
-                onClick={() => login()}
-                className="px-4 py-2 bg-[#050505] hover:bg-black/80 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Link2 className="w-4 h-4" />
-                Connect Google Account
-              </button>
+              <div className="px-4 py-2 bg-red-500/10 text-red-600 text-sm font-semibold rounded-lg inline-block">
+                Not Connected. Please log in again to sync Google Sheets.
+              </div>
             )}
           </div>
         </div>

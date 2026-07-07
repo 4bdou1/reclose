@@ -66,6 +66,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     }
 
+    // Intercept Google Access Token if present
+    if (currentSession?.provider_token) {
+      localStorage.setItem('hos_google_token', currentSession.provider_token);
+      localStorage.setItem('hos_google_token_expiry', (new Date().getTime() + 3500 * 1000).toString());
+    }
+
     setSession(currentSession);
     setUser(currentSession?.user ?? null);
     setLoading(false);
@@ -89,7 +95,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/dashboard'
+        redirectTo: window.location.origin + '/dashboard',
+        scopes: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
   };

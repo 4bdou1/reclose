@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useGoogleLogin, googleLogout } from '@react-oauth/google';
 
 interface GoogleAuthContextType {
   accessToken: string | null;
@@ -18,42 +17,42 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
   const [spreadsheetId, setSpreadsheetIdState] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    // Load persisted state
+  // Function to sync token from localStorage (set by AuthContext on Supabase login)
+  const syncToken = () => {
     const savedToken = localStorage.getItem('hos_google_token');
     const savedTokenExpiry = localStorage.getItem('hos_google_token_expiry');
-    const savedSheetId = localStorage.getItem('hos_spreadsheet_id');
-
-    if (savedSheetId) {
-      setSpreadsheetIdState(savedSheetId);
-    }
-
+    
     if (savedToken && savedTokenExpiry) {
       if (new Date().getTime() < parseInt(savedTokenExpiry)) {
         setAccessToken(savedToken);
       } else {
-        // Token expired
         localStorage.removeItem('hos_google_token');
         localStorage.removeItem('hos_google_token_expiry');
+        setAccessToken(null);
       }
+    } else {
+      setAccessToken(null);
     }
+  };
+
+  useEffect(() => {
+    // Initial sync
+    const savedSheetId = localStorage.getItem('hos_spreadsheet_id');
+    if (savedSheetId) setSpreadsheetIdState(savedSheetId);
     
+    syncToken();
     setIsReady(true);
+
+    // Set up a tiny interval to catch the token from AuthContext
+    const interval = setInterval(syncToken, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  const login = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      setAccessToken(tokenResponse.access_token);
-      localStorage.setItem('hos_google_token', tokenResponse.access_token);
-      // Approximate expiry (1 hour)
-      localStorage.setItem('hos_google_token_expiry', (new Date().getTime() + 3500 * 1000).toString());
-    },
-    onError: (error) => console.error('Login Failed:', error),
-    scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly',
-  });
+  const login = () => {
+    console.warn('Google login is now handled automatically by Supabase during initial sign in.');
+  };
 
   const logout = () => {
-    googleLogout();
     setAccessToken(null);
     setSpreadsheetIdState(null);
     localStorage.removeItem('hos_google_token');
