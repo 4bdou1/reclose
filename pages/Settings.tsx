@@ -14,6 +14,12 @@ const Settings: React.FC = () => {
   const [addingTeamMember, setAddingTeamMember] = useState(false);
 
   useEffect(() => {
+    if (spreadsheetId) {
+      setSheetIdInput(spreadsheetId);
+    }
+  }, [spreadsheetId]);
+
+  useEffect(() => {
     fetchTeamMembers();
   }, [spreadsheetId, accessToken]);
 
