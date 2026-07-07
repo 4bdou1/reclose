@@ -19,9 +19,8 @@ const DashboardLayout: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#FAFAFA]/80 backdrop-blur-xl border-b border-black/5 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#050505]">
-             {/* Using a placeholder text if image is missing, but logo should be there */}
-             <span className="text-white font-bold text-xl leading-none">R</span>
+          <div className="flex h-10 items-center justify-center">
+             <img src="/logo.png" alt="HOS Logo" className="h-8 object-contain dark:invert" />
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-[#050505] leading-none mb-1">HOS Labs</h1>
