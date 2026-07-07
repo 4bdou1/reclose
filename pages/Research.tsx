@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Search, MapPin, Phone, MessageSquare, Mail, Calendar } from 'lucide-react';
-import { googleSheetsAPI } from '../lib/googleSheets';
+import React, { useState, useEffect } from 'react';
+import { Search, MapPin, Phone, MessageSquare, Mail, Calendar, Loader2 } from 'lucide-react';
+import { googleSheetsAPI, Research as ResearchData } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
+import { useGoogleAuth } from '../context/GoogleAuthContext';
+import { toast } from 'sonner';
 
 const getContactIcon = (method: string) => {
   switch (method?.toLowerCase()) {
@@ -22,8 +24,180 @@ const getResponseBadge = (response: string) => {
   }
 };
 
+const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: number }, onUpdate: (row: any) => void }) => {
+  const [data, setData] = useState(item);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Keep local state in sync if parent data changes (e.g. from refetch)
+  useEffect(() => {
+    setData(item);
+  }, [item]);
+
+  const handleChange = (field: keyof ResearchData, value: string) => {
+    setData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleBlur = (field: keyof ResearchData) => {
+    if (data[field] !== item[field]) {
+      handleSync(data);
+    }
+  };
+
+  const handleSelectChange = (field: keyof ResearchData, value: string) => {
+    const newData = { ...data, [field]: value };
+    setData(newData);
+    if (newData[field] !== item[field]) {
+      handleSync(newData);
+    }
+  };
+
+  const handleSync = async (newData: any) => {
+    setIsSyncing(true);
+    try {
+      await onUpdate(newData);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  return (
+    <tr className="hover:bg-gray-50/50 transition-colors group relative">
+      {/* Date */}
+      <td className="p-2 border-b border-gray-100 relative">
+        {isSyncing && <div className="absolute top-2 left-2"><Loader2 className="w-3 h-3 animate-spin text-gray-400" /></div>}
+        <input 
+          type="date" 
+          value={data.date || ''} 
+          onChange={e => handleChange('date', e.target.value)}
+          onBlur={() => handleBlur('date')}
+          className="w-full bg-transparent text-xs text-gray-500 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+      {/* Business Name */}
+      <td className="p-2 border-b border-gray-100">
+        <input 
+          type="text" 
+          placeholder="Business Name"
+          value={data.business_name || ''} 
+          onChange={e => handleChange('business_name', e.target.value)}
+          onBlur={() => handleBlur('business_name')}
+          className="w-full bg-transparent font-semibold text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+      {/* Category */}
+      <td className="p-2 border-b border-gray-100">
+        <input 
+          type="text" 
+          placeholder="Category"
+          value={data.category || ''} 
+          onChange={e => handleChange('category', e.target.value)}
+          onBlur={() => handleBlur('category')}
+          className="w-full bg-transparent text-[10px] uppercase tracking-wider text-gray-500 font-bold focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+      {/* City */}
+      <td className="p-2 border-b border-gray-100">
+        <input 
+          type="text" 
+          placeholder="City"
+          value={data.city || ''} 
+          onChange={e => handleChange('city', e.target.value)}
+          onBlur={() => handleBlur('city')}
+          className="w-full bg-transparent text-sm text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+      {/* Contact Method */}
+      <td className="p-2 border-b border-gray-100">
+        <select 
+          value={data.contact_method || ''}
+          onChange={e => handleSelectChange('contact_method', e.target.value)}
+          className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1 py-1 outline-none cursor-pointer"
+        >
+          <option value="">Select</option>
+          <option value="Call">Call</option>
+          <option value="DM">DM</option>
+          <option value="Email">Email</option>
+        </select>
+      </td>
+      {/* Time of Contact */}
+      <td className="p-2 border-b border-gray-100">
+        <input 
+          type="text" 
+          placeholder="Time (e.g. 10am)"
+          value={data.time_of_contact || ''} 
+          onChange={e => handleChange('time_of_contact', e.target.value)}
+          onBlur={() => handleBlur('time_of_contact')}
+          className="w-full bg-transparent text-xs text-gray-500 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+      {/* 30s Note */}
+      <td className="p-2 border-b border-gray-100">
+        <input 
+          type="text" 
+          placeholder="Researched detail..."
+          value={data['researched_detail_(30s_note)'] || ''} 
+          onChange={e => handleChange('researched_detail_(30s_note)', e.target.value)}
+          onBlur={() => handleBlur('researched_detail_(30s_note)')}
+          className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+      {/* Response */}
+      <td className="p-2 border-b border-gray-100">
+        <select 
+          value={data.response || ''}
+          onChange={e => handleSelectChange('response', e.target.value)}
+          className={`w-full text-[10px] font-bold uppercase tracking-wider rounded px-1 py-1 outline-none cursor-pointer ${
+            data.response ? getResponseBadge(data.response) : 'bg-transparent text-gray-500 hover:bg-gray-50 focus:bg-white focus:ring-1 focus:ring-black'
+          }`}
+        >
+          <option value="">No Status</option>
+          <option value="No Answer">No Answer</option>
+          <option value="Pending">Pending</option>
+          <option value="Positive">Positive</option>
+          <option value="Negative">Negative</option>
+        </select>
+      </td>
+      {/* Follow-Up Due */}
+      <td className="p-2 border-b border-gray-100">
+        <input 
+          type="date" 
+          value={data['follow-up_due'] || ''} 
+          onChange={e => handleChange('follow-up_due', e.target.value)}
+          onBlur={() => handleBlur('follow-up_due')}
+          className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+      {/* Follow-Up Sent? */}
+      <td className="p-2 border-b border-gray-100">
+        <select 
+          value={data['follow-up_sent?'] || ''}
+          onChange={e => handleSelectChange('follow-up_sent?', e.target.value)}
+          className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1 py-1 outline-none cursor-pointer"
+        >
+          <option value="">-</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </td>
+      {/* Outcome / Notes */}
+      <td className="p-2 border-b border-gray-100">
+        <input 
+          type="text" 
+          placeholder="Outcome notes..."
+          value={data['outcome_/_notes'] || ''} 
+          onChange={e => handleChange('outcome_/_notes', e.target.value)}
+          onBlur={() => handleBlur('outcome_/_notes')}
+          className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
+        />
+      </td>
+    </tr>
+  );
+};
+
 const Research: React.FC = () => {
-  const { data: researchItems, loading } = useSheetsData(googleSheetsAPI.getResearch);
+  const { data: researchItems, loading, refetch } = useSheetsData(googleSheetsAPI.getResearch);
+  const { spreadsheetId, accessToken } = useGoogleAuth();
+  
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -45,12 +219,31 @@ const Research: React.FC = () => {
     return matchesTab && matchesSearch && isNotEmpty;
   });
 
+  const handleUpdateRow = async (updatedData: any) => {
+    if (!spreadsheetId || !accessToken || !updatedData._rowIndex) return;
+    try {
+      // Create a clean copy without _rowIndex for the API
+      const rowData = { ...updatedData };
+      delete rowData._rowIndex;
+      
+      await googleSheetsAPI.updateResearch(updatedData._rowIndex, rowData, spreadsheetId, accessToken);
+      toast.success('Row synced to Google Sheets', {
+        style: { background: '#D6B36B', color: '#000', border: 'none' }
+      });
+      // Don't refetch immediately to avoid jitter, the local state handles the UI.
+      // But we can silently refetch in background if we want.
+    } catch (error: any) {
+      toast.error('Failed to sync: ' + error.message);
+      refetch(); // Revert to server state on error
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight mb-1">Outreach Tracker</h1>
-          <p className="text-sm text-gray-500">Manage your leads and communications</p>
+          <p className="text-sm text-gray-500">Manage your leads and sync directly with Google Sheets</p>
         </div>
 
         <div className="relative w-full md:w-64">
@@ -91,73 +284,29 @@ const Research: React.FC = () => {
         </div>
       ) : (
         <div className="premium-card overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
+          <table className="w-full text-left border-collapse min-w-[1200px] bg-white">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/80">
-                <th className="p-4 text-xs font-semibold text-gray-500 w-[100px]">Date</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 w-[180px]">Business Name</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 w-[120px]">City</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 w-[140px]">Contact</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 w-[200px]">30s Note</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 w-[120px]">Response</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 w-[120px]">Follow-Up</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 min-w-[200px]">Outcome / Notes</th>
+              <tr className="border-b border-gray-200 bg-gray-100/80">
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[120px]">Date</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[180px]">Business Name</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[120px]">Category</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[120px]">City</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[100px]">Contact</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[100px]">Time</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[220px]">30s Note</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[110px]">Response</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[120px]">Follow-Up Due</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider w-[90px]">Sent?</th>
+                <th className="p-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider min-w-[200px]">Outcome / Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {filteredItems.map((item, idx) => (
-                <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="p-4 text-xs text-gray-500 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                      {item.date}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="font-semibold text-sm text-gray-900">{item.business_name}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mt-1">{item.category}</div>
-                  </td>
-                  <td className="p-4 text-sm text-gray-600 whitespace-nowrap">
-                    {item.city && (
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                        {item.city}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700">
-                        {getContactIcon(item.contact_method)}
-                        {item.contact_method}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500">{item.time_of_contact}</div>
-                  </td>
-                  <td className="p-4 text-xs text-gray-600 leading-snug">
-                    <p className="line-clamp-2" title={item['researched_detail_(30s_note)']}>
-                      {item['researched_detail_(30s_note)']}
-                    </p>
-                  </td>
-                  <td className="p-4">
-                    {item.response && (
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getResponseBadge(item.response)}`}>
-                        {item.response}
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-4 text-xs text-gray-600 whitespace-nowrap">
-                    <div className="font-medium">{item['follow-up_due']}</div>
-                    {item['follow-up_sent?'] && item['follow-up_sent?'].toLowerCase() === 'yes' && (
-                      <div className="text-[10px] font-bold text-green-600 uppercase tracking-wider mt-1">Sent ✓</div>
-                    )}
-                  </td>
-                  <td className="p-4 text-xs text-gray-600">
-                    <p className="line-clamp-2" title={item['outcome_/_notes']}>
-                      {item['outcome_/_notes']}
-                    </p>
-                  </td>
-                </tr>
+                <EditableRow 
+                  key={idx} 
+                  item={item} 
+                  onUpdate={handleUpdateRow} 
+                />
               ))}
             </tbody>
           </table>

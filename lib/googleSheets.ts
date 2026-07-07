@@ -102,11 +102,11 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
 /**
  * Append a row to a specific sheet tab, intelligently mapping object keys to the sheet's column headers.
  */
-export async function appendRow(sheetName: string, rowData: Record<string, any>, spreadsheetId: string, accessToken: string): Promise<boolean> {
+export async function appendRow(sheetName: string, rowData: Record<string, any>, spreadsheetId: string, accessToken: string, headerRowIndex: number = 0): Promise<boolean> {
   if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
 
-  // 1. Fetch the headers (Row 1) first to know where to put each piece of data
-  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!1:1`;
+  // 1. Fetch the headers first to know where to put each piece of data
+  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}`;
   const headerResponse = await fetch(headerUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -172,11 +172,11 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
 /**
  * Update a specific row in a sheet tab.
  */
-export async function updateRow(sheetName: string, rowIndex: number, rowData: Record<string, any>, spreadsheetId: string, accessToken: string): Promise<boolean> {
+export async function updateRow(sheetName: string, rowIndex: number, rowData: Record<string, any>, spreadsheetId: string, accessToken: string, headerRowIndex: number = 0): Promise<boolean> {
   if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
 
   // Fetch headers to map the row correctly
-  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!1:1`;
+  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}`;
   const headerResponse = await fetch(headerUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
   
   if (!headerResponse.ok) throw new Error(`Failed to fetch headers: ${await headerResponse.text()}`);
@@ -190,7 +190,7 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   if (rowData.completed_at && !headers.map(h => h.toLowerCase()).includes('completed at')) {
     headers.push('Completed At');
     // Update the header row
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!1:1?valueInputOption=USER_ENTERED`, {
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}?valueInputOption=USER_ENTERED`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [headers] })
@@ -278,5 +278,6 @@ export const googleSheetsAPI = {
   
   addTask: (taskObj: Record<string, any>, id: string, token: string) => appendRow('Tasks', taskObj, id, token),
   updateTask: (rowIndex: number, taskObj: Record<string, any>, id: string, token: string) => updateRow('Tasks', rowIndex, taskObj, id, token),
+  updateResearch: (rowIndex: number, data: Record<string, any>, id: string, token: string) => updateRow('Research', rowIndex, data, id, token, 2),
   deleteTask: (rowIndex: number, id: string, token: string) => deleteRow('Tasks', rowIndex, id, token),
 };
