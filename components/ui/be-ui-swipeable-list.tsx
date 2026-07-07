@@ -103,12 +103,12 @@ const CLOSE_VELOCITY = 320;
 const FLING_DISTANCE = 14;
 const RELEASE_VELOCITY_LIMIT = 1500;
 
-const ACTION_TONE_CLASS: Record<SwipeActionTone, string> = {
-  neutral: "text-muted-foreground group-hover:text-foreground",
-  primary: "text-foreground",
-  success: "text-emerald-600 dark:text-emerald-400",
-  warning: "text-amber-600 dark:text-amber-400",
-  danger: "text-destructive",
+const ACTION_TONE_BG_CLASS: Record<SwipeActionTone, string> = {
+  neutral: "bg-muted text-muted-foreground",
+  primary: "bg-primary text-primary-foreground",
+  success: "bg-green-500 text-white",
+  warning: "bg-amber-500 text-white",
+  danger: "bg-red-500 text-white",
 };
 
 function useControllableSwipeValue({
@@ -172,22 +172,20 @@ function SwipeActionButton({
       aria-label={typeof action.label === "string" ? action.label : undefined}
       onClick={() => onAction(action, side)}
       className={cn(
-        "group flex h-full shrink-0 items-center justify-center outline-none",
+        "group flex h-full shrink-0 items-center justify-center outline-none transition-colors",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:pointer-events-none disabled:opacity-50",
+        ACTION_TONE_BG_CLASS[action.tone ?? "neutral"],
         className,
       )}
       style={{ width: actionWidth }}
     >
-      <span
-        className={cn(
-          "grid h-9 w-9 place-items-center rounded-full transition-[background-color,color,transform] duration-150 group-hover:bg-background group-active:scale-95",
-          ACTION_TONE_CLASS[action.tone ?? "neutral"],
-        )}
-      >
+      <span className="flex flex-col items-center justify-center gap-1 group-active:scale-95 transition-transform">
         {action.icon}
+        {typeof action.label === "string" && (
+          <span className="text-[10px] font-bold uppercase tracking-wider">{action.label}</span>
+        )}
       </span>
-      <span className="sr-only">{action.label}</span>
     </button>
   );
 }

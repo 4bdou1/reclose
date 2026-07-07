@@ -327,20 +327,27 @@ const Tasks: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredTasks.map((task, idx) => (
-                <tr key={idx} className="hover:bg-gray-50/50 transition-colors group cursor-pointer">
-                  <td className="p-4 text-sm font-medium pr-8">{task.task}</td>
-                  <td className="p-4 text-sm text-gray-600 whitespace-nowrap">{task.user}</td>
-                  <td className="p-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(task.status)}`}>
-                      {task.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-gray-600 font-medium whitespace-nowrap">{task.deadline}</td>
-                  <td className={`p-4 text-xs uppercase tracking-wider ${getPriorityColor(task.priority)}`}>{task.priority}</td>
-                  <td className="p-4 text-xs text-gray-400 whitespace-nowrap">{task.last_updated}</td>
-                </tr>
-              ))}
+              {filteredTasks.map((task, idx) => {
+                const isDone = task.status?.toLowerCase() === 'done' || task.status?.toLowerCase() === 'completed';
+                return (
+                  <tr key={idx} className={`hover:bg-gray-50/50 transition-colors group cursor-pointer ${
+                    isDone ? 'bg-green-50/30' : ''
+                  }`}>
+                    <td className={`p-4 text-sm pr-8 ${isDone ? 'text-green-800 line-through opacity-70 font-semibold' : 'font-medium'}`}>
+                      {task.task}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 whitespace-nowrap">{task.user}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(task.status)}`}>
+                        {task.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 font-medium whitespace-nowrap">{task.deadline}</td>
+                    <td className={`p-4 text-xs uppercase tracking-wider ${getPriorityColor(task.priority)}`}>{task.priority}</td>
+                    <td className="p-4 text-xs text-gray-400 whitespace-nowrap">{task.last_updated}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -361,7 +368,11 @@ const Tasks: React.FC = () => {
             renderItem={(item) => {
               const task = (item as any).taskData as Task;
               return (
-                <div className="flex flex-col w-full h-full p-1">
+                <div className={`flex flex-col w-full h-full p-1 rounded-xl transition-colors ${
+                  task.status?.toLowerCase() === 'done' || task.status?.toLowerCase() === 'completed'
+                    ? 'bg-green-50/50 border border-green-200'
+                    : ''
+                }`}>
                   <div className="flex items-start justify-between mb-4">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(task.status)}`}>
                       {task.status}
@@ -370,7 +381,11 @@ const Tasks: React.FC = () => {
                       {task.priority}
                     </span>
                   </div>
-                  <h3 className="font-semibold text-lg leading-tight mb-4">{task.task}</h3>
+                  <h3 className={`font-semibold text-lg leading-tight mb-4 ${
+                    task.status?.toLowerCase() === 'done' || task.status?.toLowerCase() === 'completed'
+                      ? 'text-green-800 line-through opacity-70'
+                      : ''
+                  }`}>{task.task}</h3>
                   
                   <div className="space-y-2 mt-auto">
                     <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
