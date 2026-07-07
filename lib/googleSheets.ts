@@ -123,7 +123,9 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
   });
 
   // 3. Append the ordered array
-  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:A:append?valueInputOption=USER_ENTERED`;
+  // We use just the sheetName as the range so it searches all columns for the last row, 
+  // and insertDataOption=INSERT_ROWS to guarantee it never overwrites existing data (like headers).
+  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   
   const appendResponse = await fetch(appendUrl, {
     method: 'POST',
@@ -132,7 +134,7 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      range: `${sheetName}!A:A`,
+      range: sheetName,
       majorDimension: 'ROWS',
       values: [orderedRow],
     }),
