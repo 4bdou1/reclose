@@ -13,7 +13,7 @@ const Tasks: React.FC = () => {
   const { spreadsheetId, accessToken } = useGoogleAuth();
   const { user } = useAuth();
   
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('card');
   const [searchTerm, setSearchTerm] = useState('');
   
   // AI Task State
