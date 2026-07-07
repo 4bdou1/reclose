@@ -277,6 +277,7 @@ export const googleSheetsAPI = {
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
   
   addTask: (taskObj: Record<string, any>, id: string, token: string) => appendRow('Tasks', taskObj, id, token),
+  addResearch: (data: Record<string, any>, id: string, token: string) => appendRow('Research', data, id, token, 3),
   updateTask: (rowIndex: number, taskObj: Record<string, any>, id: string, token: string) => updateRow('Tasks', rowIndex, taskObj, id, token),
   updateResearch: (rowIndex: number, data: Record<string, any>, id: string, token: string) => updateRow('Research', rowIndex, data, id, token, 3),
   deleteTask: (rowIndex: number, id: string, token: string) => deleteRow('Tasks', rowIndex, id, token),

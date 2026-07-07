@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Phone, MessageSquare, Mail, Calendar, Loader2 } from 'lucide-react';
+import { Search, MapPin, Phone, MessageSquare, Mail, Calendar, Loader2, Plus } from 'lucide-react';
 import { googleSheetsAPI, Research as ResearchData } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
@@ -66,7 +66,8 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       <td className="p-2 border-b border-gray-100 relative">
         {isSyncing && <div className="absolute top-2 left-2"><Loader2 className="w-3 h-3 animate-spin text-gray-400" /></div>}
         <input 
-          type="date" 
+          type="text" 
+          placeholder="DD/MM/YYYY"
           value={data.date || ''} 
           onChange={e => handleChange('date', e.target.value)}
           onBlur={() => handleBlur('date')}
@@ -160,7 +161,8 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       {/* Follow-Up Due */}
       <td className="p-2 border-b border-gray-100">
         <input 
-          type="date" 
+          type="text" 
+          placeholder="DD/MM/YYYY"
           value={data['follow-up_due'] || ''} 
           onChange={e => handleChange('follow-up_due', e.target.value)}
           onBlur={() => handleBlur('follow-up_due')}
@@ -200,6 +202,7 @@ const Research: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   // Extract unique categories for the tabs
   const uniqueCategories = Array.from(new Set(researchItems.map(r => r.category).filter(Boolean)));
@@ -222,7 +225,6 @@ const Research: React.FC = () => {
   const handleUpdateRow = async (updatedData: any) => {
     if (!spreadsheetId || !accessToken || !updatedData._rowIndex) return;
     try {
-      // Create a clean copy without _rowIndex for the API
       const rowData = { ...updatedData };
       delete rowData._rowIndex;
       
@@ -230,11 +232,40 @@ const Research: React.FC = () => {
       toast.success('Row synced to Google Sheets', {
         style: { background: '#D6B36B', color: '#000', border: 'none' }
       });
-      // Don't refetch immediately to avoid jitter, the local state handles the UI.
-      // But we can silently refetch in background if we want.
     } catch (error: any) {
       toast.error('Failed to sync: ' + error.message);
       refetch(); // Revert to server state on error
+    }
+  };
+
+  const handleAddLead = async () => {
+    if (!spreadsheetId || !accessToken) return;
+    setIsAdding(true);
+    
+    const newLead = {
+      date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY natively
+      business_name: '',
+      category: '',
+      city: '',
+      contact_method: '',
+      time_of_contact: '',
+      'researched_detail_(30s_note)': '',
+      response: '',
+      'follow-up_due': '',
+      'follow-up_sent?': '',
+      'outcome_/_notes': ''
+    };
+
+    try {
+      await googleSheetsAPI.addResearch(newLead, spreadsheetId, accessToken);
+      toast.success('New lead created in Google Sheets', {
+        style: { background: '#D6B36B', color: '#000', border: 'none' }
+      });
+      refetch(); // Pull the newly added row
+    } catch (error: any) {
+      toast.error('Failed to add lead: ' + error.message);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -278,10 +309,6 @@ const Research: React.FC = () => {
 
       {loading ? (
         <div className="w-full h-64 bg-gray-200 rounded-3xl animate-pulse" />
-      ) : filteredItems.length === 0 ? (
-        <div className="w-full py-20 text-center text-gray-500 bg-white border border-gray-100 rounded-3xl shadow-sm">
-          No outreach entries found.
-        </div>
       ) : (
         <div className="premium-card overflow-hidden overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px] bg-white">
@@ -310,6 +337,17 @@ const Research: React.FC = () => {
               ))}
             </tbody>
           </table>
+          
+          <div className="p-4 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={handleAddLead}
+              disabled={isAdding}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-black transition-colors disabled:opacity-50"
+            >
+              {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {isAdding ? 'Adding Lead...' : 'Add New Lead'}
+            </button>
+          </div>
         </div>
       )}
     </div>
