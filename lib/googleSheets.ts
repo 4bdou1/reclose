@@ -10,6 +10,8 @@ export interface Task {
   category: string;
   last_updated: string;
   notes: string;
+  completed_at?: string;
+  _rowIndex?: number;
 }
 
 export interface Research {
@@ -59,12 +61,14 @@ function parseSheetData<T>(values: any[][]): T[] {
   const headers = values[0];
   const rows = values.slice(1);
   
-  return rows.map(row => {
+  return rows.map((row, rIdx) => {
     const obj: any = {};
     headers.forEach((header: string, index: number) => {
       const key = header.toLowerCase().trim().replace(/ /g, '_');
       obj[key] = row[index] || '';
     });
+    // Add implicit row index (+2 because values.slice(1) means rIdx 0 is row 2)
+    obj._rowIndex = rIdx + 2; 
     return obj as T;
   });
 }
@@ -161,6 +165,106 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
   return true;
 }
 
+/**
+ * Update a specific row in a sheet tab.
+ */
+export async function updateRow(sheetName: string, rowIndex: number, rowData: Record<string, any>, spreadsheetId: string, accessToken: string): Promise<boolean> {
+  if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
+
+  // Fetch headers to map the row correctly
+  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!1:1`;
+  const headerResponse = await fetch(headerUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+  
+  if (!headerResponse.ok) throw new Error(`Failed to fetch headers: ${await headerResponse.text()}`);
+  
+  const headerData = await headerResponse.json();
+  const headers: string[] = (headerData.values && headerData.values[0]) ? headerData.values[0] : [];
+
+  if (headers.length === 0) throw new Error(`No headers found in sheet ${sheetName}.`);
+
+  // Check if we need to add "Completed At"
+  if (rowData.completed_at && !headers.map(h => h.toLowerCase()).includes('completed at')) {
+    headers.push('Completed At');
+    // Update the header row
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!1:1?valueInputOption=USER_ENTERED`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [headers] })
+    });
+  }
+
+  // Find where headers start
+  let startColIndex = 0;
+  while (startColIndex < headers.length && !headers[startColIndex].trim()) startColIndex++;
+  const startColLetter = String.fromCharCode(65 + startColIndex);
+
+  // Map to array
+  const orderedRow = headers.map(header => {
+    if (!header.trim()) return '';
+    const key = header.toLowerCase().trim().replace(/ /g, '_');
+    return rowData[key] !== undefined ? rowData[key] : '';
+  });
+
+  const slicedRow = orderedRow.slice(startColIndex);
+  
+  // End column letter
+  const endColLetter = String.fromCharCode(65 + startColIndex + slicedRow.length - 1);
+  const range = `${sheetName}!${startColLetter}${rowIndex}:${endColLetter}${rowIndex}`;
+
+  const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const updateResponse = await fetch(updateUrl, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ range, majorDimension: 'ROWS', values: [slicedRow] })
+  });
+
+  if (!updateResponse.ok) throw new Error(`Failed to update row: ${await updateResponse.text()}`);
+  return true;
+}
+
+/**
+ * Physically delete a row from a sheet.
+ */
+export async function deleteRow(sheetName: string, rowIndex: number, spreadsheetId: string, accessToken: string): Promise<boolean> {
+  if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
+
+  // 1. Get the sheetId (numeric ID of the tab)
+  const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets(properties(sheetId,title))`;
+  const metaRes = await fetch(metaUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+  
+  if (!metaRes.ok) throw new Error(`Failed to fetch spreadsheet metadata: ${await metaRes.text()}`);
+  
+  const metaData = await metaRes.json();
+  const sheet = metaData.sheets?.find((s: any) => s.properties?.title === sheetName);
+  
+  if (!sheet) throw new Error(`Sheet tab named "${sheetName}" not found.`);
+  const sheetId = sheet.properties.sheetId;
+
+  // 2. Perform batchUpdate to delete the row (0-indexed, so row 2 is startIndex: 1)
+  const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`;
+  const batchRes = await fetch(batchUrl, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: sheetId,
+              dimension: 'ROWS',
+              startIndex: rowIndex - 1, // 0-indexed inclusive
+              endIndex: rowIndex        // 0-indexed exclusive
+            }
+          }
+        }
+      ]
+    })
+  });
+
+  if (!batchRes.ok) throw new Error(`Failed to delete row: ${await batchRes.text()}`);
+  return true;
+}
+
 export const googleSheetsAPI = {
   getTasks: (id: string, token: string) => fetchSheet<Task>('Tasks', id, token),
   getResearch: (id: string, token: string) => fetchSheet<Research>('Research', id, token),
@@ -169,4 +273,6 @@ export const googleSheetsAPI = {
   getActivity: (id: string, token: string) => fetchSheet<Activity>('Activity', id, token),
   
   addTask: (taskObj: Record<string, any>, id: string, token: string) => appendRow('Tasks', taskObj, id, token),
+  updateTask: (rowIndex: number, taskObj: Record<string, any>, id: string, token: string) => updateRow('Tasks', rowIndex, taskObj, id, token),
+  deleteTask: (rowIndex: number, id: string, token: string) => deleteRow('Tasks', rowIndex, id, token),
 };

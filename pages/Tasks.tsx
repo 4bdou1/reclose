@@ -6,6 +6,7 @@ import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { useAuth } from '../context/AuthContext';
 import { parseTaskFromText, ParsedTask } from '../lib/ai';
 import { toast } from 'sonner';
+import { TaskCard } from '../components/tasks/TaskCard';
 
 const Tasks: React.FC = () => {
   const { data: tasks, loading, refetch } = useSheetsData(googleSheetsAPI.getTasks);
@@ -22,6 +23,16 @@ const Tasks: React.FC = () => {
   const [parsedPreview, setParsedPreview] = useState<ParsedTask | null>(null);
 
   const filteredTasks = tasks.filter(t => {
+    // Hide completed tasks that are older than 12 hours
+    if (t.status?.toLowerCase() === 'done' && t.completed_at) {
+      const completedTime = new Date(t.completed_at).getTime();
+      const now = Date.now();
+      const twelveHours = 12 * 60 * 60 * 1000;
+      if (now - completedTime > twelveHours) {
+        return false;
+      }
+    }
+
     const taskName = t.task || '';
     const taskUser = t.user || '';
     return taskName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -102,6 +113,36 @@ const Tasks: React.FC = () => {
       console.error(err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCompleteTask = async (task: Task) => {
+    if (!task._rowIndex || !spreadsheetId || !accessToken) return;
+    try {
+      const updatedTask = {
+        ...task,
+        status: 'Done',
+        completed_at: new Date().toISOString()
+      };
+      // Explicitly delete _rowIndex before sending to API so it doesn't get inserted as a column
+      delete updatedTask._rowIndex;
+
+      await googleSheetsAPI.updateTask(task._rowIndex, updatedTask, spreadsheetId, accessToken);
+      toast.success('Task marked as completed!');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to complete task');
+    }
+  };
+
+  const handleDeleteTask = async (task: Task) => {
+    if (!task._rowIndex || !spreadsheetId || !accessToken) return;
+    try {
+      await googleSheetsAPI.deleteTask(task._rowIndex, spreadsheetId, accessToken);
+      toast.success('Task deleted permanently');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete task');
     }
   };
 
@@ -279,29 +320,16 @@ const Tasks: React.FC = () => {
           </table>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTasks.map((task, idx) => (
-            <div key={idx} className="premium-card p-5 hover:-translate-y-1 transition-transform cursor-pointer">
-              <div className="flex items-start justify-between mb-4">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusColor(task.status)}`}>
-                  {task.status}
-                </span>
-                <span className={`text-[10px] uppercase tracking-wider ${getPriorityColor(task.priority)}`}>
-                  {task.priority}
-                </span>
-              </div>
-              <h3 className="font-semibold text-lg leading-tight mb-4">{task.task}</h3>
-              
-              <div className="space-y-2 mt-auto">
-                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                   <div className="bg-[#050505] h-full rounded-full" style={{ width: `${task.progress || 0}%` }} />
-                </div>
-                <div className="flex items-center justify-between text-xs mt-4">
-                  <span className="font-medium text-gray-500">User: <span className="text-black">{task.user}</span></span>
-                  <span className="font-medium text-gray-500">{task.deadline}</span>
-                </div>
-              </div>
-            </div>
+            <TaskCard 
+              key={task.id || idx}
+              task={task}
+              onComplete={handleCompleteTask}
+              onDelete={handleDeleteTask}
+              getStatusColor={getStatusColor}
+              getPriorityColor={getPriorityColor}
+            />
           ))}
         </div>
       )}
