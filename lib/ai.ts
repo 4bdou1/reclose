@@ -1,5 +1,3 @@
-import { GoogleGenAI, Type } from '@google/genai';
-
 export interface ParsedTask {
   task: string;
   status: string;
@@ -8,53 +6,69 @@ export interface ParsedTask {
 }
 
 export async function parseTaskFromText(text: string, apiKey: string): Promise<ParsedTask | null> {
-  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
-    throw new Error('Please set a valid GEMINI_API_KEY in your .env.local file to use the AI Task Manager.');
+  // Local "Smart Recognition" algorithm using Regex and Date Math
+  let priority = 'Medium';
+  let deadline = '';
+  let cleanTask = text;
+
+  const lowerText = text.toLowerCase();
+
+  // 1. Detect Priority
+  if (lowerText.match(/\b(urgent|asap|high priority|important|critical|immediately)\b/)) {
+    priority = 'High';
+  } else if (lowerText.match(/\b(low priority|whenever|no rush|someday)\b/)) {
+    priority = 'Low';
   }
 
-  const ai = new GoogleGenAI({ apiKey });
-
-  const prompt = `
-    You are an intelligent project manager. Your job is to extract task details from a natural language request.
-    Extract the following information:
-    - task: The clean, action-based objective (remove filler words, keep it concise).
-    - priority: Must be exactly "High", "Medium", or "Low" (infer from urgency words like "important", "ASAP", etc.). If unknown, default to "Medium".
-    - deadline: Determine the exact date mentioned. If it says "Friday" or "tomorrow", return a YYYY-MM-DD date assuming today is ${new Date().toISOString().split('T')[0]}. If no date is found, leave empty string "".
-    
-    The user's raw input is: "${text}"
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            task: { type: Type.STRING },
-            priority: { type: Type.STRING },
-            deadline: { type: Type.STRING },
-          },
-          required: ['task', 'priority', 'deadline']
-        }
+  // 2. Detect Deadline
+  const today = new Date();
+  
+  if (lowerText.includes('today')) {
+    deadline = today.toISOString().split('T')[0];
+  } else if (lowerText.includes('tomorrow')) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    deadline = tomorrow.toISOString().split('T')[0];
+  } else if (lowerText.includes('next week')) {
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    deadline = nextWeek.toISOString().split('T')[0];
+  } else {
+    // Check for days of the week (e.g. "friday", "on friday", "by friday")
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    for (let i = 0; i < days.length; i++) {
+      if (lowerText.includes(days[i])) {
+        const currentDay = today.getDay();
+        let daysUntil = i - currentDay;
+        if (daysUntil <= 0) daysUntil += 7; // Next occurrence of that day
+        
+        const targetDate = new Date(today);
+        targetDate.setDate(targetDate.getDate() + daysUntil);
+        deadline = targetDate.toISOString().split('T')[0];
+        break;
       }
-    });
-
-    const resultText = response.text();
-    if (!resultText) return null;
-
-    const data = JSON.parse(resultText);
-    
-    return {
-      task: data.task || text,
-      status: 'Not Started',
-      priority: data.priority || 'Medium',
-      deadline: data.deadline || '',
-    };
-  } catch (error) {
-    console.error('Failed to parse task using Gemini:', error);
-    throw new Error('Failed to connect to the AI model.');
+    }
   }
+
+  // 3. Clean up the task string (basic removal of common phrases)
+  cleanTask = cleanTask
+    .replace(/\b(urgent|asap|high priority|important|critical|immediately|low priority|whenever|no rush|someday)\b/gi, '')
+    .replace(/\b(today|tomorrow|next week)\b/gi, '')
+    .replace(/\b(on|by|before|this|next)?\s*(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi, '')
+    .replace(/\s+/g, ' ') // remove extra spaces
+    .trim();
+    
+  // Capitalize first letter
+  if (cleanTask.length > 0) {
+    cleanTask = cleanTask.charAt(0).toUpperCase() + cleanTask.slice(1);
+  } else {
+    cleanTask = text; // fallback
+  }
+
+  return {
+    task: cleanTask,
+    status: 'Not Started',
+    priority,
+    deadline,
+  };
 }

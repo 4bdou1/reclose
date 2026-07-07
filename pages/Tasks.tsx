@@ -51,15 +51,15 @@ const Tasks: React.FC = () => {
     
     setIsAnalyzing(true);
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
-      const parsed = await parseTaskFromText(newTaskInput, apiKey);
+      // Pass an empty string for API key since we're using local regex extraction now
+      const parsed = await parseTaskFromText(newTaskInput, '');
       if (parsed) {
         setParsedPreview(parsed);
       } else {
-        toast.error('AI could not understand the task.');
+        toast.error('Could not parse task details.');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Error analyzing task');
+      toast.error(err.message || 'Error parsing task');
     } finally {
       setIsAnalyzing(false);
     }
@@ -139,13 +139,13 @@ const Tasks: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Add Task */}
+      {/* Smart Add Task */}
       <div className="space-y-4">
         <form onSubmit={handleAnalyzeTask} className="premium-card p-4 flex gap-3 items-center border-[#D6B36B]/30 bg-white shadow-sm focus-within:border-[#C5A059] transition-colors">
           <Sparkles className="w-5 h-5 text-[#C5A059] shrink-0" />
           <input 
             type="text"
-            placeholder="Ask AI to create a task (e.g., 'Finish landing page by Friday, high priority')"
+            placeholder="Type a task naturally (e.g., 'Finish landing page by Friday, high priority')"
             value={newTaskInput}
             onChange={(e) => setNewTaskInput(e.target.value)}
             className="flex-1 bg-transparent border-none focus:outline-none text-sm placeholder:text-gray-400"
@@ -169,12 +169,12 @@ const Tasks: React.FC = () => {
           </button>
         </form>
 
-        {/* AI Preview Card */}
+        {/* Smart Preview Card */}
         {parsedPreview && (
           <div className="premium-card p-5 border-[#050505]/10 animate-in fade-in slide-in-from-top-2 duration-300 bg-gray-50/50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">Task Preview</h3>
-              <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-md">Parsed by AI</span>
+              <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-md">Smart Recognition</span>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
