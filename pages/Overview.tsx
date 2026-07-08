@@ -186,6 +186,7 @@ const Overview: React.FC = () => {
                 <div>
                   <h4 className="font-semibold text-lg leading-tight mb-1">{activeMission.mission_name}</h4>
                   <p className="text-xs text-gray-500">Target completion: <span className="text-black font-medium">{new Date(activeMission.target_date).toLocaleDateString()}</span></p>
+                  {analyticsData && <pre className="text-[10px] text-red-500 max-w-xs overflow-auto">DEBUG ANALYTICS: {JSON.stringify(analyticsData.overview, null, 2)}</pre>}
                 </div>
               </div>
 

@@ -147,6 +147,40 @@ export async function getAnalyticsDashboard(spreadsheetId: string, accessToken: 
 
   let currentSection = '';
 
+    const findMetric = (label: string): string | null => {
+      for (let r = 0; r < values.length; r++) {
+        const rVals = values[r] || [];
+        for (let c = 0; c < rVals.length; c++) {
+          const cellStr = String(rVals[c]).trim();
+          if (cellStr.includes(label)) {
+            // Check immediately to the right
+            const rightCell = String(rVals[c + 1] || '').trim();
+            if (rightCell && !isNaN(parseFloat(rightCell))) return rightCell;
+            
+            // Check immediately below
+            const belowRow = values[r + 1] || [];
+            const belowCell = String(belowRow[c] || '').trim();
+            if (belowCell && !isNaN(parseFloat(belowCell))) return belowCell;
+
+            // Check row below, first valid column
+            const belowRowNums = belowRow.map(v => String(v).trim()).filter(v => v !== '');
+            if (belowRowNums.length > 0 && !isNaN(parseFloat(belowRowNums[0]))) return belowRowNums[0];
+            
+            // Check same row, next valid columns
+            const sameRowNums = rVals.slice(c + 1).map(v => String(v).trim()).filter(v => v !== '');
+            if (sameRowNums.length > 0 && !isNaN(parseFloat(sameRowNums[0]))) return sameRowNums[0];
+          }
+        }
+      }
+      return null;
+    };
+
+    analytics.overview.totalOutreaches = findMetric('Total Outreaches') || '0';
+    analytics.overview.totalResponses = findMetric('Responses') || '0';
+    analytics.overview.noAnswerRate = findMetric('No Answer Rate') || '0%';
+    analytics.overview.responseRate = findMetric('Response Rate') || '0%';
+    analytics.overview.followUpsPending = findMetric('Follow-Ups Pending') || '0';
+
   for (let i = 0; i < values.length; i++) {
     const row = values[i];
     if (!row || row.length === 0) {
@@ -154,28 +188,8 @@ export async function getAnalyticsDashboard(spreadsheetId: string, accessToken: 
       continue;
     }
     
-    // Google Sheets API strips trailing empty cells, so we just filter out the empty ones caused by merged cells
     const cells = row.map(c => String(c).trim()).filter(c => c !== '');
     const firstCell = String(row[0] || '').trim();
-
-    // 1. Overview Metrics
-    if (cells.some(c => c.includes('Total Outreaches'))) {
-      const nextRow = values[i + 1] || [];
-      const nums = nextRow.map(c => String(c).trim()).filter(c => c !== '');
-      analytics.overview.totalOutreaches = nums[0] || '0';
-      analytics.overview.totalResponses = nums[1] || '0';
-      analytics.overview.noAnswerRate = nums[2] || '0%';
-      analytics.overview.responseRate = nums[3] || '0%';
-    }
-
-    // 2. Pending Follow-Ups
-    if (firstCell.includes('Follow-Ups Pending')) {
-      const nextRow = values[i + 1] || [];
-      const nums = nextRow.map(c => String(c).trim()).filter(c => c !== '');
-      if (nums.length >= 1) {
-        analytics.overview.followUpsPending = nums[0];
-      }
-    }
 
     // 3. Identify Sections
     if (firstCell === 'By Category') { currentSection = 'category'; i++; continue; }
