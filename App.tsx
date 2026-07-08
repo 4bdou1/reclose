@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -56,6 +56,27 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // Landing Page Component
 const LandingPage: React.FC = () => {
+  useEffect(() => {
+    document.body.style.backgroundColor = '#050505';
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaThemeColor);
+    }
+    const previousContent = metaThemeColor.getAttribute('content');
+    metaThemeColor.setAttribute('content', '#050505');
+
+    return () => {
+      document.body.style.backgroundColor = '';
+      if (previousContent) {
+        metaThemeColor?.setAttribute('content', previousContent);
+      } else {
+        metaThemeColor?.setAttribute('content', '#FAFAFA');
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C5A059] selection:text-white">
       <Navbar />
