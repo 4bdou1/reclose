@@ -90,9 +90,7 @@ const Overview: React.FC = () => {
       if (showLoading) setMissionLoading(false);
     };
     
-    if (isReady) {
-      fetchMissionData();
-    }
+    fetchMissionData();
 
     // Optional: Realtime subscription for missions
     const subscription = supabase
@@ -103,7 +101,7 @@ const Overview: React.FC = () => {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [isReady, spreadsheetId, accessToken]);
+  }, [spreadsheetId, accessToken]);
 
   const calculateDaysLeft = (targetDate: string) => {
     if (!targetDate) return 0;
