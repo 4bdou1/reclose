@@ -58,14 +58,14 @@ const Navbar: React.FC = () => {
   return (
     <>
       <nav 
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-in-out ${
-          scrollDirection === 'down' && !isAtTop ? '-translate-y-full md:translate-y-0' : 'translate-y-0'
+        className={`fixed inset-x-0 top-0 z-[70] transition-all duration-300 ease-in-out ${
+          scrollDirection === 'down' && !isAtTop && !isOpen ? '-translate-y-full md:translate-y-0' : 'translate-y-0'
         } ${
-          isAtTop ? 'bg-transparent py-5' : 'bg-[#050505]/90 backdrop-blur-md py-3 border-b border-white/10'
+          isAtTop && !isOpen ? 'bg-transparent py-5' : 'bg-[#050505]/90 backdrop-blur-md py-3 border-b border-white/10'
         } px-4 md:px-6`}
       >
-        <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-6">
-          <Link to="/dashboard" className="justify-self-start">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
+          <Link to="/dashboard" onClick={() => setIsOpen(false)} className="relative z-10">
             <Logo
               size="sm"
               showText={true}
@@ -75,7 +75,7 @@ const Navbar: React.FC = () => {
             />
           </Link>
 
-          <div className="hidden items-center justify-center lg:flex">
+          <div className="hidden items-center justify-center lg:flex flex-1">
             <div className={`flex items-center gap-10 rounded-full px-7 py-3 transition-colors ${isAtTop ? 'bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/10' : 'bg-transparent'}`}>
             {navLinks.map((link) => {
               const isActive = activeSection === link.href.substring(1);
@@ -95,7 +95,7 @@ const Navbar: React.FC = () => {
             </div>
           </div>
 
-          <div className="hidden items-center gap-3 justify-self-end md:flex">
+          <div className="hidden items-center gap-3 md:flex relative z-10">
             <a
               href="#get-started"
               className="lux-button inline-flex items-center gap-2 rounded-full bg-[#D6B36B] px-4 py-2 text-sm font-semibold text-black shadow-[0_14px_35px_rgba(214,179,107,0.26)] hover:bg-[#e2c27c]"
@@ -105,13 +105,38 @@ const Navbar: React.FC = () => {
             </a>
           </div>
 
-          <button
-            onClick={() => setIsOpen(true)}
-            className="justify-self-end rounded-full border border-white/10 bg-white/[0.03] p-2.5 text-white transition-all active:scale-90 md:hidden hover:bg-white/[0.08]"
-            aria-label="Open navigation"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          <div className="relative md:hidden z-10 flex items-center justify-end">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="relative w-12 h-12 flex items-center justify-center rounded-full focus:outline-none group cursor-pointer transition-transform duration-200 active:scale-90"
+                aria-label="Toggle menu"
+                aria-expanded={isOpen}
+            >
+                {/* Outer ring */}
+                <div className="absolute inset-0 rounded-full border border-white/10 group-hover:border-white/20 transition-colors duration-500"></div>
+
+                {/* Inner hover fill */}
+                <div className="absolute inset-1 rounded-full bg-white/[0.02] group-hover:bg-white/[0.04] transition-colors duration-400"></div>
+
+                {/* SVG icon */}
+                <svg
+                    viewBox="0 0 100 100"
+                    className="w-6 h-6 relative z-10"
+                    fill="none"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                >
+                    <path 
+                        className={`stroke-white transition-all duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-[40%_38%] ${isOpen ? 'translate-x-[10%] translate-y-[12%] rotate-45 !stroke-[#D6B36B] delay-75' : 'delay-0'}`} 
+                        d="M25 38 L55 38" 
+                    />
+                    <path 
+                        className={`stroke-white transition-all duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-[50%_62%] ${isOpen ? 'translate-x-0 -translate-y-[12%] -rotate-45 !stroke-[#D6B36B] delay-0' : 'delay-75'}`} 
+                        d="M25 62 L75 62" 
+                    />
+                </svg>
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -125,20 +150,8 @@ const Navbar: React.FC = () => {
         />
 
         <div
-          className={`absolute right-0 top-0 flex h-full w-full max-w-[28rem] flex-col border-l border-white/10 bg-[#050505] p-6 shadow-2xl transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute left-0 top-0 flex w-full flex-col border-b border-white/10 bg-[#050505] p-6 pt-24 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-y-0' : '-translate-y-full'}`}
         >
-          <div className="flex items-center justify-between">
-            <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-              <Logo size="sm" showText={true} />
-            </Link>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="rounded-full border border-white/10 bg-white/[0.03] p-2.5 text-white transition-all active:scale-90 hover:bg-white/[0.08]"
-              aria-label="Close navigation"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
 
           <div className="mt-8">
             <p className="text-[11px] uppercase tracking-[0.35em] text-white/45 mb-4 px-2">Navigation</p>
