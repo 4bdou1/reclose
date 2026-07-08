@@ -259,6 +259,8 @@ const Settings: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+      
       <div className="premium-card p-6">
         <div className="flex items-start gap-4">
           <div className="p-3 rounded-xl bg-orange-50 text-orange-600">
