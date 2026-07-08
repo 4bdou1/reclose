@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useGoogleLogin } from '@react-oauth/google';
 import { supabase } from '../lib/supabase';
 
 interface GoogleAuthContextType {
@@ -128,8 +129,26 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
     return () => clearInterval(interval);
   }, []);
 
+  const googleLogin = useGoogleLogin({
+    onSuccess: (codeResponse) => {
+      if (codeResponse.access_token) {
+        const expiresIn = codeResponse.expires_in || 3500;
+        const expiryTime = new Date().getTime() + (expiresIn * 1000);
+        
+        localStorage.setItem('hos_google_token', codeResponse.access_token);
+        localStorage.setItem('hos_google_token_expiry', expiryTime.toString());
+        setAccessToken(codeResponse.access_token);
+        // Dispatch event or just let React update
+      }
+    },
+    onError: (error) => {
+      console.error('Google Login Failed:', error);
+    },
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+  });
+
   const login = () => {
-    console.warn('Google login is now handled automatically by Supabase during initial sign in.');
+    googleLogin();
   };
 
   const logout = () => {
