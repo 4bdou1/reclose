@@ -59,7 +59,7 @@ const Navbar: React.FC = () => {
     <>
       <nav 
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-in-out ${
-          scrollDirection === 'down' && !isAtTop ? '-translate-y-full' : 'translate-y-0'
+          scrollDirection === 'down' && !isAtTop ? '-translate-y-full md:translate-y-0' : 'translate-y-0'
         } ${
           isAtTop ? 'bg-transparent py-5' : 'bg-[#050505]/90 backdrop-blur-md py-3 border-b border-white/10'
         } px-4 md:px-6`}
