@@ -162,12 +162,10 @@ export async function getAnalyticsDashboard(spreadsheetId: string, accessToken: 
     if (cells.some(c => c.includes('Total Outreaches'))) {
       const nextRow = values[i + 1] || [];
       const nums = nextRow.map(c => String(c).trim()).filter(c => c !== '');
-      if (nums.length >= 4) {
-        analytics.overview.totalOutreaches = nums[0];
-        analytics.overview.totalResponses = nums[1];
-        analytics.overview.noAnswerRate = nums[2];
-        analytics.overview.responseRate = nums[3];
-      }
+      analytics.overview.totalOutreaches = nums[0] || '0';
+      analytics.overview.totalResponses = nums[1] || '0';
+      analytics.overview.noAnswerRate = nums[2] || '0%';
+      analytics.overview.responseRate = nums[3] || '0%';
     }
 
     // 2. Pending Follow-Ups
