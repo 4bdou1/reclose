@@ -309,7 +309,7 @@ const Research: React.FC = () => {
         style: { background: '#D6B36B', color: '#000', border: 'none' }
       });
       const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
-      logDashboardActivity(ownerName, 'Research Added', 'Created a new blank lead');
+      await logDashboardActivity(ownerName, 'Research Added', 'Created a new blank lead');
       refetch(); // Pull the newly added row
     } catch (error: any) {
       toast.error('Failed to add lead: ' + error.message);

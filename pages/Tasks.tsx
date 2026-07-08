@@ -104,7 +104,7 @@ const Tasks: React.FC = () => {
       const success = await googleSheetsAPI.addTask(newTaskObj, spreadsheetId, accessToken);
       if (success) {
         toast.success('Task added to Google Sheets!');
-        logDashboardActivity(ownerName, 'Task Added', `Added new task: ${newTaskObj.task}`);
+        await logDashboardActivity(ownerName, 'Task Added', `Added new task: ${newTaskObj.task}`);
         setNewTaskInput('');
         setParsedPreview(null);
         refetch(); // Reload the data
@@ -133,7 +133,7 @@ const Tasks: React.FC = () => {
       await googleSheetsAPI.updateTask(task._rowIndex, updatedTask, spreadsheetId, accessToken);
       toast.success('Task marked as completed!');
       const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
-      logDashboardActivity(ownerName, 'Task Completed', `Completed task: ${task.task}`);
+      await logDashboardActivity(ownerName, 'Task Completed', `Completed task: ${task.task}`);
       refetch();
     } catch (err: any) {
       toast.error(err.message || 'Failed to complete task');

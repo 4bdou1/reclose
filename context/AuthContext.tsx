@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const handleSession = async (currentSession: Session | null) => {
+  const handleSession = async (currentSession: Session | null, event?: string) => {
     if (currentSession?.user?.email) {
       const authorized = await isEmailAuthorized(currentSession.user.email);
       if (!authorized) {
@@ -66,15 +66,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     }
 
-    // Intercept Google Access Token if present
-    if (currentSession?.provider_token) {
+    // ONLY Intercept Google Tokens on fresh sign in to prevent resurrecting expired tokens on page reload!
+    if (event === 'SIGNED_IN' && currentSession?.provider_token) {
       localStorage.setItem('hos_google_token', currentSession.provider_token);
       localStorage.setItem('hos_google_token_expiry', (new Date().getTime() + 3500 * 1000).toString());
-    }
-    
-    // Intercept Google Refresh Token if present
-    if (currentSession?.provider_refresh_token) {
-      localStorage.setItem('hos_google_refresh_token', currentSession.provider_refresh_token);
+      
+      if (currentSession.provider_refresh_token) {
+        localStorage.setItem('hos_google_refresh_token', currentSession.provider_refresh_token);
+      }
     }
 
     setSession(currentSession);
@@ -85,12 +84,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
+      handleSession(session, 'INITIAL');
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      handleSession(session, event);
     });
 
     return () => subscription.unsubscribe();

@@ -110,10 +110,11 @@ const Files: React.FC = () => {
 
       if (dbError) throw dbError;
 
-      logDashboardActivity(uploaderName, 'File Uploaded', `Uploaded a new file: ${newFileName}`);
+      await logDashboardActivity(uploaderName, 'File Uploaded', `Uploaded a new file: ${newFileName}`);
       toast.success('File uploaded successfully!');
       setIsModalOpen(false);
       resetModal();
+      fetchFiles(); // Force immediate update
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error(err.message || 'Failed to upload file');
@@ -138,6 +139,7 @@ const Files: React.FC = () => {
       const { error } = await supabase.from('files').delete().eq('id', id);
       if (error) throw error;
       toast.success('File deleted');
+      fetchFiles(); // Force immediate update
     } catch (err: any) {
       console.error('Delete error:', err);
       toast.error('Failed to delete file');
