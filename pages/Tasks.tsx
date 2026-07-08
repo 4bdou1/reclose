@@ -150,7 +150,7 @@ const Tasks: React.FC = () => {
         .from('activity_log')
         .delete()
         .ilike('action_type', 'Task%')
-        .ilike('details', `%${task.task}%`);
+        .ilike('description', `%${task.task}%`);
 
       toast.success('Task deleted permanently');
       refetch();

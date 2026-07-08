@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
 ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Everyone can view activity" ON activity_log FOR SELECT USING (true);
 CREATE POLICY "Authenticated users can insert activity" ON activity_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete activity" ON activity_log FOR DELETE USING (auth.role() = 'authenticated');
 ALTER PUBLICATION supabase_realtime ADD TABLE activity_log;
 
 -- 6. Native Dashboard Missions
