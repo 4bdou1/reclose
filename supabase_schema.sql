@@ -37,3 +37,11 @@ CREATE POLICY "Auth users can delete leads" ON leads FOR DELETE USING (auth.role
 
 -- Enable realtime for leads to update dashboard instantly
 ALTER PUBLICATION supabase_realtime ADD TABLE leads;
+
+-- 3. App Settings (Global Configuration)
+CREATE TABLE IF NOT EXISTS app_settings (
+  id INT PRIMARY KEY DEFAULT 1,
+  spreadsheet_id TEXT
+);
+INSERT INTO app_settings (id, spreadsheet_id) VALUES (1, '') ON CONFLICT DO NOTHING;
+

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface GoogleAuthContextType {
   accessToken: string | null;
@@ -36,12 +37,26 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
   };
 
   useEffect(() => {
-    // Initial sync
-    const savedSheetId = localStorage.getItem('hos_spreadsheet_id');
-    if (savedSheetId) setSpreadsheetIdState(savedSheetId);
+    const fetchSpreadsheetId = async () => {
+      try {
+        const { data, error } = await supabase.from('app_settings').select('spreadsheet_id').eq('id', 1).single();
+        if (data && data.spreadsheet_id) {
+          setSpreadsheetIdState(data.spreadsheet_id);
+          localStorage.setItem('hos_spreadsheet_id', data.spreadsheet_id);
+        } else {
+          const savedSheetId = localStorage.getItem('hos_spreadsheet_id');
+          if (savedSheetId) setSpreadsheetIdState(savedSheetId);
+        }
+      } catch (err) {
+        const savedSheetId = localStorage.getItem('hos_spreadsheet_id');
+        if (savedSheetId) setSpreadsheetIdState(savedSheetId);
+      } finally {
+        setIsReady(true);
+      }
+    };
     
+    fetchSpreadsheetId();
     syncToken();
-    setIsReady(true);
 
     // Set up a tiny interval to catch the token from AuthContext
     const interval = setInterval(syncToken, 1000);
@@ -60,9 +75,14 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
     localStorage.removeItem('hos_spreadsheet_id');
   };
 
-  const setSpreadsheetId = (id: string) => {
+  const setSpreadsheetId = async (id: string) => {
     setSpreadsheetIdState(id);
     localStorage.setItem('hos_spreadsheet_id', id);
+    try {
+      await supabase.from('app_settings').upsert({ id: 1, spreadsheet_id: id });
+    } catch (err) {
+      console.error('Failed to save spreadsheet ID to Supabase', err);
+    }
   };
 
   const isAuthenticated = !!accessToken;
