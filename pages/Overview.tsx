@@ -56,7 +56,7 @@ const Overview: React.FC = () => {
     // Optional: Realtime subscription for instant dashboard updates
     const subscription = supabase
       .channel('activity_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, () => fetchActivities(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => fetchActivities(false))
       .subscribe();
 
     return () => {

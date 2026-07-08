@@ -144,6 +144,14 @@ const Tasks: React.FC = () => {
     if (!task._rowIndex || !spreadsheetId || !accessToken) return;
     try {
       await googleSheetsAPI.deleteTask(task._rowIndex, spreadsheetId, accessToken);
+      
+      // Also remove it from recent activity (activity_log)
+      await supabase
+        .from('activity_log')
+        .delete()
+        .ilike('action_type', 'Task%')
+        .ilike('details', `%${task.task}%`);
+
       toast.success('Task deleted permanently');
       refetch();
     } catch (err: any) {
