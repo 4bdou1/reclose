@@ -41,7 +41,7 @@ const Auth: React.FC = () => {
           {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold tracking-tight mb-2">Admin Login</h1>
-            <p className="text-gray-500 text-sm">Sign in with your Google account to manage REclose</p>
+            <p className="text-gray-500 text-sm">Authorized users only</p>
           </div>
 
           <button
