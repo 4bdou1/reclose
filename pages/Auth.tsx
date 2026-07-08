@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import { isWebview } from '../lib/detectWebview';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,25 @@ const Auth: React.FC = () => {
       setLoading(false);
     }
   };
+
+  if (isWebview()) {
+    return (
+      <div className="min-h-screen flex bg-[#050505] text-white p-6">
+        <div className="w-full max-w-md mx-auto mt-20 bg-red-500/10 border border-red-500/20 p-8 rounded-3xl text-center">
+          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold mb-4">Unsupported Browser</h2>
+          <p className="text-gray-400 mb-6">
+            Google does not allow signing in from embedded social media browsers (like Instagram, Facebook, or WhatsApp).
+          </p>
+          <p className="text-white font-semibold">
+            Please tap the three dots in the corner and select "Open in System Browser" (Safari/Chrome) to log in.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-[#050505] text-white">
