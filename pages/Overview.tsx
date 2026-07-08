@@ -6,6 +6,9 @@ import { supabase, Mission } from '../lib/supabase';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { useAuth } from '../context/AuthContext';
 
+let globalActivityCache: any[] | null = null;
+let activityCacheTime = 0;
+
 const Overview: React.FC = () => {
   const { user } = useAuth();
   const { accessToken, spreadsheetId, isReady } = useGoogleAuth();
@@ -15,8 +18,8 @@ const Overview: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [missionLoading, setMissionLoading] = useState(true);
   
-  const [activityLogs, setActivityLogs] = useState<any[]>([]);
-  const [isActivityLoading, setIsActivityLoading] = useState(true);
+  const [activityLogs, setActivityLogs] = useState<any[]>(globalActivityCache || []);
+  const [isActivityLoading, setIsActivityLoading] = useState(!globalActivityCache);
 
   const loading = isActivityLoading || missionLoading;
   
@@ -44,7 +47,8 @@ const Overview: React.FC = () => {
 
   useEffect(() => {
     const fetchActivities = async (showLoading = true) => {
-      if (showLoading) setIsActivityLoading(true);
+      if (globalActivityCache && Date.now() - activityCacheTime < 60000) showLoading = false;
+      if (showLoading && !globalActivityCache) setIsActivityLoading(true);
       const { data, error } = await supabase
         .from('activity_log')
         .select('*')
@@ -52,6 +56,8 @@ const Overview: React.FC = () => {
         
       if (!error && data) {
         setActivityLogs(data);
+        globalActivityCache = data;
+        activityCacheTime = Date.now();
       }
       if (showLoading) setIsActivityLoading(false);
     };

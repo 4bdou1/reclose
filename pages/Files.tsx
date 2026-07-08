@@ -18,10 +18,13 @@ interface FileData {
   created_at: string;
 }
 
+let globalFilesCache: FileData[] | null = null;
+let filesCacheTime = 0;
+
 const Files: React.FC = () => {
   const { user } = useAuth();
-  const [files, setFiles] = useState<FileData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [files, setFiles] = useState<FileData[]>(globalFilesCache || []);
+  const [loading, setLoading] = useState(!globalFilesCache);
   
   const [activeCategory, setActiveCategory] = useState('All Files');
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,7 +53,12 @@ const Files: React.FC = () => {
   }, []);
 
   const fetchFiles = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+    // If we have a fresh cache (< 60s), skip showing the loading skeleton
+    if (globalFilesCache && Date.now() - filesCacheTime < 60000) {
+      showLoading = false;
+    }
+    
+    if (showLoading && !globalFilesCache) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('files')
@@ -58,7 +66,10 @@ const Files: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFiles(data || []);
+      const fetched = data || [];
+      setFiles(fetched);
+      globalFilesCache = fetched;
+      filesCacheTime = Date.now();
     } catch (err: any) {
       console.error('Error fetching files:', err);
       toast.error('Failed to load files');
