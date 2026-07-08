@@ -56,6 +56,17 @@ export interface Meeting {
   created_at: string;
   updated_at: string;
 }
+export interface Mission {
+  id: string;
+  mission_name: string;
+  target_value: number;
+  metric_type: string;
+  current_value: number;
+  target_date: string;
+  status: string;
+  created_at: string;
+  completed_at?: string;
+}
 
 export interface Activity {
   id: string;

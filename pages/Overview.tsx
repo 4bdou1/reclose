@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, FileText, Microscope, RefreshCw, ChevronRight, Activity as ActivityIcon } from 'lucide-react';
-import { googleSheetsAPI } from '../lib/googleSheets';
+import { googleSheetsAPI, AnalyticsData } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
-import { supabase } from '../lib/supabase';
+import { supabase, Mission } from '../lib/supabase';
+import { useGoogleAuth } from '../context/GoogleAuthContext';
 
 const Overview: React.FC = () => {
-  const { data: goalsData, loading: goalsLoading } = useSheetsData(googleSheetsAPI.getGoals);
+  const { accessToken, spreadsheetId, isReady } = useGoogleAuth();
   const { data: tasksData, loading: tasksLoading } = useSheetsData(googleSheetsAPI.getTasks);
+  
+  const [activeMission, setActiveMission] = useState<Mission | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [missionLoading, setMissionLoading] = useState(true);
   
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [isActivityLoading, setIsActivityLoading] = useState(true);
 
-  const loading = goalsLoading || tasksLoading || isActivityLoading;
-  
-  const goal = goalsData && goalsData.length > 0 ? goalsData[0] : null;
+  const loading = tasksLoading || isActivityLoading || missionLoading;
   
   // Show all activities from the last 24 hours across all users
   const isSinceYesterday = (dateString: string) => {
@@ -60,6 +63,32 @@ const Overview: React.FC = () => {
       supabase.removeChannel(subscription);
     };
   }, []);
+
+  useEffect(() => {
+    const fetchMissionData = async () => {
+      setMissionLoading(true);
+      const { data, error } = await supabase.from('missions').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(1);
+      
+      if (!error && data && data.length > 0) {
+        const mission = data[0];
+        setActiveMission(mission);
+        
+        if (mission.metric_type === 'outreaches' && spreadsheetId && accessToken) {
+          try {
+            const aData = await googleSheetsAPI.getAnalyticsDashboard(spreadsheetId, accessToken);
+            setAnalyticsData(aData);
+          } catch (e) {
+            console.error('Failed to fetch analytics for mission', e);
+          }
+        }
+      }
+      setMissionLoading(false);
+    };
+    
+    if (isReady) {
+      fetchMissionData();
+    }
+  }, [isReady, spreadsheetId, accessToken]);
 
   const calculateDaysLeft = (targetDate: string) => {
     if (!targetDate) return 0;
@@ -132,35 +161,57 @@ const Overview: React.FC = () => {
       {/* Mission Progress Section */}
       <section>
         <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-gray-500 mb-4 px-1">Mission Progress</h3>
-        <div className="premium-card p-6">
-          <div className="flex items-start gap-4 mb-6">
-            <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                <path className="text-gray-100" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path className="text-[#050505] transition-all duration-1000 ease-out" strokeDasharray={`${calculateProgress(goal?.completed_tasks || '0', goal?.total_tasks || '1')}, 100`} strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              </svg>
-              <span className="absolute text-sm font-bold">{calculateProgress(goal?.completed_tasks || '0', goal?.total_tasks || '1')}%</span>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-lg leading-tight mb-1">{goal?.goal_name || 'Q2 Goal: Build & Validate HOS Ecosystem'}</h4>
-              <p className="text-xs text-gray-500">Target completion: <span className="text-black font-medium">{goal?.target_date || 'June 30, 2025'}</span></p>
-            </div>
-          </div>
+        
+        {activeMission ? (() => {
+          const currentMissionValue = activeMission.metric_type === 'outreaches' && analyticsData 
+             ? parseInt(analyticsData.overview.totalOutreaches || '0') 
+             : activeMission.metric_type === 'tasks' && tasksData
+             ? tasksData.filter(t => t.status?.toLowerCase() === 'done' || t.status?.toLowerCase() === 'completed').length
+             : activeMission.current_value || 0;
 
-          <div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-              <div 
-                className="h-full bg-[#050505] rounded-full transition-all duration-1000" 
-                style={{ width: `${calculateProgress(goal?.completed_tasks || '0', goal?.total_tasks || '1')}%` }} 
-              />
+          const targetMissionValue = activeMission.target_value || 1;
+          const progressPercent = calculateProgress(currentMissionValue.toString(), targetMissionValue.toString());
+
+          return (
+            <div className="premium-card p-6">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <path className="text-gray-100" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path className="text-[#050505] transition-all duration-1000 ease-out" strokeDasharray={`${progressPercent}, 100`} strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <span className="absolute text-sm font-bold">{progressPercent}%</span>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-lg leading-tight mb-1">{activeMission.mission_name}</h4>
+                  <p className="text-xs text-gray-500">Target completion: <span className="text-black font-medium">{new Date(activeMission.target_date).toLocaleDateString()}</span></p>
+                </div>
+              </div>
+
+              <div>
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+                  <div 
+                    className="h-full bg-[#050505] rounded-full transition-all duration-1000" 
+                    style={{ width: `${progressPercent}%` }} 
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-gray-500"><span className="text-black">{currentMissionValue}</span> of {targetMissionValue} {activeMission.metric_type}</span>
+                  <span className="font-medium text-black px-2 py-1 bg-gray-100 rounded-md">{calculateDaysLeft(activeMission.target_date)} days left</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-gray-500"><span className="text-black">{goal?.completed_tasks || '0'}</span> of {goal?.total_tasks || '0'} tasks completed</span>
-              <span className="font-medium text-black px-2 py-1 bg-gray-100 rounded-md">{calculateDaysLeft(goal?.target_date || new Date().toISOString())} days left</span>
+          );
+        })() : (
+          <div className="premium-card p-6 flex flex-col items-center justify-center text-center py-12">
+            <div className="p-4 bg-gray-50 rounded-full mb-4">
+              <CheckCircle2 className="w-8 h-8 text-gray-400" />
             </div>
+            <h4 className="font-semibold text-lg mb-1">No Active Mission</h4>
+            <p className="text-sm text-gray-500 max-w-sm">Head over to Settings to set a new active mission for the team.</p>
           </div>
-        </div>
+        )}
       </section>
 
       {/* Recent Activity */}

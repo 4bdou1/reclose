@@ -85,3 +85,19 @@ CREATE POLICY "Everyone can view activity" ON activity_log FOR SELECT USING (tru
 CREATE POLICY "Authenticated users can insert activity" ON activity_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 ALTER PUBLICATION supabase_realtime ADD TABLE activity_log;
 
+-- 6. Native Dashboard Missions
+CREATE TABLE IF NOT EXISTS missions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  mission_name TEXT NOT NULL,
+  target_value NUMERIC NOT NULL,
+  metric_type TEXT NOT NULL, -- 'outreaches', 'tasks', 'manual'
+  current_value NUMERIC DEFAULT 0,
+  target_date TIMESTAMPTZ,
+  status TEXT DEFAULT 'active', -- 'active' or 'completed'
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+ALTER TABLE missions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Everyone can view and edit missions" ON missions FOR ALL USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE missions;
