@@ -172,9 +172,16 @@ const Navbar: React.FC = () => {
 
           <div className="mt-8 rounded-3xl border border-white/5 bg-[#111111] p-6 relative overflow-hidden">
             <div className="absolute right-[-10px] bottom-[5px] pointer-events-none opacity-[0.5] z-0">
-               <svg viewBox="0 0 100 80" className="w-[160px] h-[160px] text-[#22d3ee] drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="currentColor" strokeWidth="5" strokeLinecap="round"/>
+               <svg viewBox="0 0 100 80" className="w-[160px] h-[160px] drop-shadow-[0_0_15px_rgba(45,212,191,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="rc-gradient-mobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#4ADE80" />
+                      <stop offset="50%" stopColor="#2DD4BF" />
+                      <stop offset="100%" stopColor="#3B82F6" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="url(#rc-gradient-mobile)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="url(#rc-gradient-mobile)" strokeWidth="5" strokeLinecap="round"/>
                </svg>
             </div>
             
