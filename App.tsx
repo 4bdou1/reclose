@@ -19,11 +19,10 @@ import DashboardLayout from './components/dashboard/DashboardLayout';
 
 // Landing Page Components
 import Hero from './components/landing/Hero';
-import LuxuryTicker from './components/landing/LuxuryTicker';
-import WhatWeDo from './components/landing/WhatWeDo';
-import WhoItsFor from './components/landing/WhoItsFor';
-import HowItWorks from './components/landing/HowItWorks';
-import LeadCaptureForm from './components/landing/LeadCaptureForm';
+import WhyReclose from './components/landing/WhyReclose';
+import HowWeWork from './components/landing/HowWeWork';
+import CaseStudies from './components/landing/CaseStudies';
+import FinalCTA from './components/landing/FinalCTA';
 import Footer from './components/Footer';
 import Navbar from './components/landing/Navbar';
 
@@ -58,26 +57,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Landing Page Component
 const LandingPage: React.FC = () => {
   return (
-    <div className="relative isolate min-h-screen overflow-x-hidden bg-[#F5F6F7] font-sans text-[#111318]">
+    <div className="min-h-screen bg-white text-black font-sans selection:bg-[#C5A059] selection:text-white">
       <Navbar />
       <main className="relative z-10">
         <Hero />
-        <div className="relative overflow-hidden bg-[#2F2F33] text-white">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 bg-[#2F2F33]" />
-            <div className="absolute inset-0 lux-grid opacity-30" />
-            <div className="absolute left-[-10%] top-[-5%] h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,rgba(197,160,89,0.14),transparent_70%)]" />
-            <div className="absolute right-[-12%] top-[12%] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.10),transparent_70%)]" />
-            <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[50rem] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.04),transparent_70%)]" />
-          </div>
-          <div className="relative z-10">
-            <LuxuryTicker />
-            <WhatWeDo />
-            <WhoItsFor />
-            <HowItWorks />
-            <LeadCaptureForm />
-          </div>
-        </div>
+        <WhyReclose />
+        <HowWeWork />
+        <CaseStudies />
+        <FinalCTA />
       </main>
       <Footer />
     </div>

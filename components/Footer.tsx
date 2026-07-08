@@ -27,7 +27,7 @@ const Footer: React.FC = () => {
         <div>
           <Logo size="sm" className="items-start" theme="dark" />
           <p className="mt-5 max-w-md text-sm leading-7 text-white/62">
-            REclose creates premium websites and automation systems for businesses that need their digital presence to feel more intentional, more trusted, and more operationally sharp.
+            REclose is a digital growth agency that builds premium websites, marketing engines, and intelligent automations for businesses looking to scale efficiently.
           </p>
           <HOSLogo />
         </div>
@@ -35,9 +35,9 @@ const Footer: React.FC = () => {
         <div>
           <p className="text-[11px] uppercase tracking-[0.35em] text-white/40">Explore</p>
           <div className="mt-5 space-y-3 text-sm text-white/68">
-            <a className="block hover:text-white" href="#what-we-do">Capabilities</a>
-            <a className="block hover:text-white" href="#who-its-for">Ideal Clients</a>
-            <a className="block hover:text-white" href="#how-it-works">Process</a>
+            <a className="block hover:text-white" href="#why-reclose">Why REclose?</a>
+            <a className="block hover:text-white" href="#how-we-work">Process</a>
+            <a className="block hover:text-white" href="#work">Our Work</a>
             <a className="block hover:text-white" href="#get-started">Start a Project</a>
           </div>
         </div>
@@ -54,7 +54,7 @@ const Footer: React.FC = () => {
 
       <div className="relative z-10 mx-auto mt-12 flex max-w-7xl flex-col gap-3 border-t border-white/8 pt-6 text-xs uppercase tracking-[0.3em] text-white/36 sm:flex-row sm:items-center sm:justify-between">
         <p>&copy; {new Date().getFullYear()} REclose.</p>
-        <p>Website systems for premium operators.</p>
+        <p>Digital growth systems.</p>
       </div>
     </footer>
   );

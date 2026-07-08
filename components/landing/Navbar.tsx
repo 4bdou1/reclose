@@ -27,9 +27,9 @@ const Navbar: React.FC = () => {
   }, []);
 
   const navLinks = [
-    { label: 'Capabilities', href: '#what-we-do' },
-    { label: 'Ideal Clients', href: '#who-its-for' },
-    { label: 'Process', href: '#how-it-works' },
+    { label: 'Why REclose?', href: '#why-reclose' },
+    { label: 'Process', href: '#how-we-work' },
+    { label: 'Our Work', href: '#work' },
     { label: 'Start', href: '#get-started' },
   ];
 
