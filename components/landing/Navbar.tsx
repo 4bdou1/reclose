@@ -185,7 +185,7 @@ const Navbar: React.FC = () => {
               </div>
               
               <h3 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
-                Premium websites and automation systems for service-led brands.
+                Marketing, websites and automation systems for service-led brands.
               </h3>
               <p className="mt-4 text-xs leading-5 text-white/50 max-w-[90%]">
                 From positioning and buildout to lead capture and follow-up, the public site is designed to feel as high-touch as the service behind it.
