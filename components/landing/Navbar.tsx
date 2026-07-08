@@ -171,10 +171,10 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="mt-8 rounded-3xl border border-white/5 bg-[#111111] p-6 relative overflow-hidden">
-            <div className="absolute right-[-20%] bottom-10 opacity-30 blur-sm pointer-events-none">
-               <svg viewBox="0 0 100 80" className="w-64 h-64 text-blue-500" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="currentColor" strokeWidth="8" strokeLinecap="round"/>
+            <div className="absolute -right-16 -bottom-16 opacity-40 blur-[2px] pointer-events-none transform scale-150">
+               <svg viewBox="0 0 100 80" className="w-64 h-64 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="currentColor" strokeWidth="6" strokeLinecap="round"/>
                </svg>
             </div>
             
