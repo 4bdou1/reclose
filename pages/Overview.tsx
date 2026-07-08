@@ -75,7 +75,7 @@ const Overview: React.FC = () => {
         
         if (mission.metric_type === 'outreaches' && spreadsheetId && accessToken) {
           try {
-            const aData = await googleSheetsAPI.getAnalyticsDashboard(spreadsheetId, accessToken);
+            const aData = await googleSheetsAPI.getAnalytics(spreadsheetId, accessToken);
             setAnalyticsData(aData);
           } catch (e) {
             console.error('Failed to fetch analytics for mission', e);
@@ -186,7 +186,6 @@ const Overview: React.FC = () => {
                 <div>
                   <h4 className="font-semibold text-lg leading-tight mb-1">{activeMission.mission_name}</h4>
                   <p className="text-xs text-gray-500">Target completion: <span className="text-black font-medium">{new Date(activeMission.target_date).toLocaleDateString()}</span></p>
-                  {analyticsData && <pre className="text-[10px] text-red-500 max-w-xs overflow-auto">DEBUG ANALYTICS: {JSON.stringify(analyticsData.overview, null, 2)}</pre>}
                 </div>
               </div>
 
