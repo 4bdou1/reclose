@@ -16,7 +16,7 @@ const Overview: React.FC = () => {
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [isActivityLoading, setIsActivityLoading] = useState(true);
 
-  const loading = tasksLoading || isActivityLoading || missionLoading;
+  const loading = isActivityLoading || missionLoading;
   
   // Show all activities from the last 24 hours across all users
   const isSinceYesterday = (dateString: string) => {
@@ -38,8 +38,8 @@ const Overview: React.FC = () => {
     : [];
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      setIsActivityLoading(true);
+    const fetchActivities = async (showLoading = true) => {
+      if (showLoading) setIsActivityLoading(true);
       const { data, error } = await supabase
         .from('activity_log')
         .select('*')
@@ -48,7 +48,7 @@ const Overview: React.FC = () => {
       if (!error && data) {
         setActivityLogs(data);
       }
-      setIsActivityLoading(false);
+      if (showLoading) setIsActivityLoading(false);
     };
     
     fetchActivities();
@@ -56,7 +56,7 @@ const Overview: React.FC = () => {
     // Optional: Realtime subscription for instant dashboard updates
     const subscription = supabase
       .channel('activity_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, fetchActivities)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, () => fetchActivities(false))
       .subscribe();
 
     return () => {
@@ -65,8 +65,8 @@ const Overview: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const fetchMissionData = async () => {
-      setMissionLoading(true);
+    const fetchMissionData = async (showLoading = true) => {
+      if (showLoading) setMissionLoading(true);
       const { data, error } = await supabase.from('missions').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(1);
       
       if (!error && data && data.length > 0) {
@@ -82,12 +82,22 @@ const Overview: React.FC = () => {
           }
         }
       }
-      setMissionLoading(false);
+      if (showLoading) setMissionLoading(false);
     };
     
     if (isReady) {
       fetchMissionData();
     }
+
+    // Optional: Realtime subscription for missions
+    const subscription = supabase
+      .channel('missions_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'missions' }, () => fetchMissionData(false))
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [isReady, spreadsheetId, accessToken]);
 
   const calculateDaysLeft = (targetDate: string) => {

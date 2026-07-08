@@ -41,7 +41,7 @@ const Files: React.FC = () => {
 
     const subscription = supabase
       .channel('files_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'files' }, fetchFiles)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'files' }, () => fetchFiles(false))
       .subscribe();
 
     return () => {
@@ -49,8 +49,8 @@ const Files: React.FC = () => {
     };
   }, []);
 
-  const fetchFiles = async () => {
-    setLoading(true);
+  const fetchFiles = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('files')
@@ -63,7 +63,7 @@ const Files: React.FC = () => {
       console.error('Error fetching files:', err);
       toast.error('Failed to load files');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
