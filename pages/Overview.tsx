@@ -144,6 +144,27 @@ const Overview: React.FC = () => {
     { icon: FileText, value: newFilesCount.toString(), label: 'New files added', color: 'text-orange-500', bg: 'bg-orange-500/10' },
   ];
 
+  const getFirstName = (emailOrName: string) => {
+    if (!emailOrName) return 'User';
+    if (emailOrName.toLowerCase() === 'haliluismailibrahim@gmail.com') return 'Ismail';
+    if (emailOrName.toLowerCase() === 'sadiquseey@gmail.com') return 'Sadiq';
+    if (emailOrName.toLowerCase() === 'abdibal2g@gmail.com') return 'Abdoul';
+    
+    if (emailOrName.includes('@')) {
+      const namePart = emailOrName.split('@')[0];
+      return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    }
+    
+    return emailOrName.split(' ')[0];
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
       
@@ -155,7 +176,7 @@ const Overview: React.FC = () => {
             <span className="text-[10px] font-medium px-3 py-1 bg-white/10 rounded-full text-white">Since last night</span>
           </div>
           
-          <h2 className="text-3xl font-semibold tracking-tight mb-2">Good morning, Abdoul.</h2>
+          <h2 className="text-3xl font-semibold tracking-tight mb-2">{getGreeting()}, {getFirstName(ownerName)}.</h2>
           <p className="text-sm text-gray-400 mb-8">Here's what changed while you were away.</p>
 
           <div className="grid grid-cols-2 gap-4">
