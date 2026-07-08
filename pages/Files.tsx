@@ -169,10 +169,40 @@ const Files: React.FC = () => {
   };
 
   const getYoutubeVideoId = (url: string) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    if (!url || typeof url !== 'string') return null;
+    if (!url.toLowerCase().includes('youtu')) return null;
+
+    let videoId = null;
+    try {
+      const urlStr = url.startsWith('http') ? url : `https://${url}`;
+      const urlObj = new URL(urlStr);
+      
+      if (urlObj.hostname.includes('youtube.com')) {
+        if (urlObj.pathname === '/watch') {
+          videoId = urlObj.searchParams.get('v');
+        } else if (urlObj.pathname.startsWith('/embed/')) {
+          videoId = urlObj.pathname.split('/')[2];
+        } else if (urlObj.pathname.startsWith('/v/')) {
+          videoId = urlObj.pathname.split('/')[2];
+        } else if (urlObj.pathname.startsWith('/shorts/')) {
+          videoId = urlObj.pathname.split('/')[2];
+        }
+      } else if (urlObj.hostname.includes('youtu.be')) {
+        videoId = urlObj.pathname.slice(1);
+      }
+    } catch (e) {
+      // Fallback
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|\/shorts\/)([^#&?]*).*/;
+      const match = url.match(regExp);
+      if (match && match[2].length === 11) videoId = match[2];
+    }
+    
+    // Clean up video ID (sometimes has trailing query params if not caught)
+    if (videoId) {
+      videoId = videoId.split('?')[0].split('&')[0];
+    }
+    
+    return (videoId && videoId.length === 11) ? videoId : null;
   };
 
   return (
