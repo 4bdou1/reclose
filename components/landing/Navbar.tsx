@@ -5,24 +5,46 @@ import Logo from '../Logo';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isBrandExpanded, setIsBrandExpanded] = useState(true);
+  const [isAtTop, setIsAtTop] = useState(true);
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
+  const [activeSection, setActiveSection] = useState<string>('');
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
-
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
   useEffect(() => {
+    let lastScrollY = window.scrollY;
+    
     const handleScroll = () => {
-      setIsBrandExpanded(window.scrollY < 56);
+      const currentScrollY = window.scrollY;
+      setIsAtTop(currentScrollY < 20);
+      
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setScrollDirection('down');
+      } else if (currentScrollY < lastScrollY) {
+        setScrollDirection('up');
+      }
+      lastScrollY = currentScrollY;
+
+      // Scrollspy logic
+      const sections = ['why-reclose', 'how-we-work', 'work', 'get-started'];
+      let current = '';
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= 150 && rect.bottom >= 150) {
+            current = section;
+            break;
+          }
+        }
+      }
+      setActiveSection(current);
     };
 
-    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -35,7 +57,13 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="fixed inset-x-0 top-0 z-50 px-4 pt-5 md:px-6">
+      <nav 
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-in-out ${
+          scrollDirection === 'down' && !isAtTop ? '-translate-y-full' : 'translate-y-0'
+        } ${
+          isAtTop ? 'bg-transparent py-5' : 'bg-[#050505]/90 backdrop-blur-md py-3 border-b border-white/10'
+        } px-4 md:px-6`}
+      >
         <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-6">
           <Link to="/dashboard" className="justify-self-start">
             <Logo
@@ -43,21 +71,27 @@ const Navbar: React.FC = () => {
               showText={true}
               theme="dark"
               animateTextReveal={true}
-              textVisible={isBrandExpanded}
+              textVisible={isAtTop}
             />
           </Link>
 
           <div className="hidden items-center justify-center lg:flex">
-            <div className="flex items-center gap-10 rounded-full bg-white/[0.04] px-7 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/10">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="lux-button px-1 py-2 text-sm text-gray-400 hover:text-white"
-              >
-                {link.label}
-              </a>
-            ))}
+            <div className={`flex items-center gap-10 rounded-full px-7 py-3 transition-colors ${isAtTop ? 'bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/10' : 'bg-transparent'}`}>
+            {navLinks.map((link) => {
+              const isActive = activeSection === link.href.substring(1);
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className={`lux-button px-1 py-2 text-sm transition-colors relative ${isActive ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  {link.label}
+                  {isActive && !isAtTop && (
+                    <span className="absolute left-0 right-0 -bottom-1 h-[2px] bg-[#D6B36B] rounded-full" />
+                  )}
+                </a>
+              );
+            })}
             </div>
           </div>
 
