@@ -171,30 +171,30 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="mt-8 rounded-3xl border border-white/5 bg-[#111111] p-6 relative overflow-hidden">
-            <div className="absolute -right-16 -bottom-16 opacity-40 blur-[2px] pointer-events-none transform scale-150">
-               <svg viewBox="0 0 100 80" className="w-64 h-64 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="currentColor" strokeWidth="6" strokeLinecap="round"/>
+            <div className="absolute right-[-40px] bottom-[-20px] pointer-events-none opacity-[0.85]">
+               <svg viewBox="0 0 100 80" className="w-[180px] h-[180px] text-[#22d3ee] drop-shadow-[0_0_20px_rgba(34,211,238,0.5)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="currentColor" strokeWidth="5" strokeLinecap="round"/>
                </svg>
             </div>
             
-            <div className="relative z-10">
+            <div className="relative z-10 pr-[80px]">
               <div className="flex items-center gap-2 mb-4">
                 <p className="text-[10px] uppercase tracking-[0.3em] text-white/45">Engagement</p>
-                <div className="w-2 h-2 rotate-45 bg-cyan-400"></div>
+                <div className="w-2 h-2 rotate-45 bg-[#22d3ee]"></div>
               </div>
               
-              <h3 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white pr-10">
+              <h3 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
                 Premium websites and automation systems for service-led brands.
               </h3>
-              <p className="mt-4 text-xs leading-5 text-white/50 max-w-[85%]">
+              <p className="mt-4 text-xs leading-5 text-white/50 max-w-[90%]">
                 From positioning and buildout to lead capture and follow-up, the public site is designed to feel as high-touch as the service behind it.
               </p>
 
               <a
                 href="#get-started"
                 onClick={() => setIsOpen(false)}
-                className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-cyan-400 hover:bg-white/5 transition-colors"
+                className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-[#22d3ee] hover:bg-white/5 transition-colors"
               >
                 Learn More 
                 <ArrowUpRight className="h-3 w-3" />
