@@ -14,7 +14,18 @@ const Overview: React.FC = () => {
   const loading = goalsLoading || tasksLoading || isActivityLoading;
   
   const goal = goalsData && goalsData.length > 0 ? goalsData[0] : null;
-  const activities = activityLogs.slice(0, 4);
+  
+  // Show all activities from the last 24 hours across all users
+  const isSinceYesterday = (dateString: string) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return false;
+    const yesterday = new Date();
+    yesterday.setHours(yesterday.getHours() - 24);
+    return date.getTime() > yesterday.getTime();
+  };
+  
+  const activities = activityLogs.filter(a => isSinceYesterday(a.created_at));
   
   const deadlines = tasksData 
     ? tasksData
@@ -60,15 +71,6 @@ const Overview: React.FC = () => {
     const c = parseInt(completed) || 0;
     const t = parseInt(total) || 1;
     return Math.round((c / t) * 100);
-  };
-
-  const isSinceYesterday = (dateString: string) => {
-    if (!dateString) return false;
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return false;
-    const yesterday = new Date();
-    yesterday.setHours(yesterday.getHours() - 24);
-    return date.getTime() > yesterday.getTime();
   };
 
   if (loading) {
@@ -168,7 +170,7 @@ const Overview: React.FC = () => {
         </div>
         
         <div className="premium-card overflow-hidden">
-          <div className="divide-y divide-gray-100/50">
+          <div className="divide-y divide-gray-100/50 max-h-[350px] overflow-y-auto hide-scrollbar">
             {activities.length > 0 ? activities.map((activity, idx) => {
               const formattedTime = new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               return (

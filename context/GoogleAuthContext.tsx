@@ -32,11 +32,31 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
 
     isRefreshingRef.current = true;
     try {
-      const { data, error } = await supabase.functions.invoke('refresh-google-token', {
-        body: { refresh_token: refreshToken }
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
+      
+      if (!clientId) throw new Error('Missing Google Client ID in .env.local');
+      if (!clientSecret) throw new Error('Missing Google Client Secret in .env.local');
+
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error_description || data.error || 'Failed to refresh token with Google');
+      }
+
       if (data && data.access_token) {
         const expiresIn = data.expires_in || 3500;
         const expiryTime = new Date().getTime() + (expiresIn * 1000);
@@ -45,7 +65,7 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
         localStorage.setItem('hos_google_token_expiry', expiryTime.toString());
         setAccessToken(data.access_token);
       } else {
-        throw new Error('Invalid response from edge function');
+        throw new Error('Invalid response from Google');
       }
     } catch (err) {
       console.error('Failed to automatically refresh Google token:', err);
