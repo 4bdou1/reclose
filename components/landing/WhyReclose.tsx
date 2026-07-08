@@ -43,7 +43,7 @@ const WhyReclose: React.FC = () => {
           <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
             {pillars.map((pillar, index) => (
               <Reveal key={pillar.title} delay={index * 100}>
-                <div className="flex flex-col items-start premium-card p-8 h-full transition-all hover:-translate-y-1 hover:shadow-xl">
+                <div className="flex flex-col items-start black-card p-8 h-full transition-all hover:-translate-y-1 hover:shadow-xl">
                   <div className={`rounded-2xl p-4 ${pillar.color} ${pillar.border} border mb-6`}>
                     <pillar.icon className="h-8 w-8" aria-hidden="true" />
                   </div>

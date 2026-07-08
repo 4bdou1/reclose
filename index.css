@@ -3,14 +3,14 @@
 }
 
 html {
-  background: #050505;
+  background: #FAFAFA;
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  background: #050505;
-  color: #FFFFFF;
+  background: #FAFAFA;
+  color: #111827;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -65,9 +65,9 @@ textarea {
 }
 
 .premium-card {
-  background: #111111;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01);
   border-radius: 20px;
 }
 

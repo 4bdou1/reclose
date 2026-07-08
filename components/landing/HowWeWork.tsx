@@ -62,7 +62,7 @@ const HowWeWork: React.FC = () => {
 
                     {/* Content Box */}
                     <div className="w-full md:w-1/2 pl-16 md:pl-0 flex flex-col justify-center">
-                      <div className={`premium-card p-8 bg-[#111111] ${index % 2 === 0 ? 'md:mr-12' : 'md:ml-12'}`}>
+                      <div className={`black-card p-8 bg-[#111111] ${index % 2 === 0 ? 'md:mr-12' : 'md:ml-12'}`}>
                         <div className="text-[11px] font-bold tracking-widest text-gray-500 mb-2">STEP {step.id}</div>
                         <h3 className="text-xl font-bold text-white mb-3">{step.name}</h3>
                         <p className="text-gray-400 leading-relaxed">{step.description}</p>
