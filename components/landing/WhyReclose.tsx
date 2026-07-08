@@ -28,12 +28,12 @@ const WhyReclose: React.FC = () => {
   ];
 
   return (
-    <section id="why-reclose" className="relative bg-white py-24 sm:py-32 overflow-hidden">
+    <section id="why-reclose" className="relative bg-[#050505] py-24 sm:py-32 overflow-hidden">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:text-center">
           <Reveal>
             <h2 className="text-base font-semibold leading-7 text-[#ba8c2c] uppercase tracking-widest">Why REclose?</h2>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Everything your business needs to grow.
             </p>
           </Reveal>
@@ -47,10 +47,10 @@ const WhyReclose: React.FC = () => {
                   <div className={`rounded-2xl p-4 ${pillar.color} ${pillar.border} border mb-6`}>
                     <pillar.icon className="h-8 w-8" aria-hidden="true" />
                   </div>
-                  <dt className="text-xl font-semibold leading-7 text-gray-900 mb-4">
+                  <dt className="text-xl font-semibold leading-7 text-white mb-4">
                     {pillar.title}
                   </dt>
-                  <dd className="text-base leading-7 text-gray-600 flex-1">
+                  <dd className="text-base leading-7 text-gray-400 flex-1">
                     {pillar.description}
                   </dd>
                 </div>

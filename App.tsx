@@ -57,7 +57,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Landing Page Component
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-white text-black font-sans selection:bg-[#C5A059] selection:text-white">
+    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#C5A059] selection:text-white">
       <Navbar />
       <main className="relative z-10">
         <Hero />

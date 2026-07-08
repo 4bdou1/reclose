@@ -75,7 +75,7 @@ const Logo: React.FC<LogoProps> = ({
           >
             <div className="flex items-center gap-2">
               <span className={`${dimensions.text} font-bold tracking-tight ${textColor} uppercase`}>
-                RE<span className="text-brand-blue">close</span>
+                RE<span className="text-blue-500">close</span>
               </span>
               <span className={`${sublineColor} font-bold`}>.AI</span>
             </div>

@@ -41,19 +41,19 @@ const Navbar: React.FC = () => {
             <Logo
               size="sm"
               showText={true}
-              theme="light"
+              theme="dark"
               animateTextReveal={true}
               textVisible={isBrandExpanded}
             />
           </Link>
 
           <div className="hidden items-center justify-center lg:flex">
-            <div className="flex items-center gap-10 rounded-full bg-black/[0.04] px-7 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
+            <div className="flex items-center gap-10 rounded-full bg-white/[0.04] px-7 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/10">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="lux-button px-1 py-2 text-sm text-slate-700 hover:text-slate-950"
+                className="lux-button px-1 py-2 text-sm text-gray-400 hover:text-white"
               >
                 {link.label}
               </a>
@@ -73,7 +73,7 @@ const Navbar: React.FC = () => {
 
           <button
             onClick={() => setIsOpen(true)}
-            className="justify-self-end rounded-full p-2 text-slate-800 transition-colors hover:text-[#B38A33] md:hidden"
+            className="justify-self-end rounded-full p-2 text-white transition-colors hover:text-[#B38A33] md:hidden"
             aria-label="Open navigation"
           >
             <Menu className="h-5 w-5" />
