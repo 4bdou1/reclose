@@ -127,11 +127,11 @@ const Navbar: React.FC = () => {
                     strokeLinecap="round"
                 >
                     <path 
-                        className={`stroke-white transition-all duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-[40%_38%] ${isOpen ? 'translate-x-[10%] translate-y-[12%] rotate-45 !stroke-[#D6B36B] delay-75' : 'delay-0'}`} 
+                        className={`stroke-white transition-all duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] [transform-box:view-box] origin-[40%_38%] ${isOpen ? 'translate-x-[10%] translate-y-[12%] rotate-45 !stroke-[#D6B36B] delay-75' : 'delay-0'}`} 
                         d="M25 38 L55 38" 
                     />
                     <path 
-                        className={`stroke-white transition-all duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-[50%_62%] ${isOpen ? 'translate-x-0 -translate-y-[12%] -rotate-45 !stroke-[#D6B36B] delay-0' : 'delay-75'}`} 
+                        className={`stroke-white transition-all duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] [transform-box:view-box] origin-[50%_62%] ${isOpen ? 'translate-x-0 -translate-y-[12%] -rotate-45 !stroke-[#D6B36B] delay-0' : 'delay-75'}`} 
                         d="M25 62 L75 62" 
                     />
                 </svg>
@@ -150,7 +150,7 @@ const Navbar: React.FC = () => {
         />
 
         <div
-          className={`absolute left-0 top-0 flex w-full flex-col border-b border-white/10 bg-[#050505] p-6 pt-24 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-y-0' : '-translate-y-full'}`}
+          className={`absolute left-0 top-0 flex w-full max-h-[100dvh] overflow-y-auto flex-col border-b border-white/10 bg-[#050505] p-6 pt-24 pb-12 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-y-0' : '-translate-y-full'}`}
         >
 
           <div className="mt-8">
