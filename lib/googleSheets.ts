@@ -96,11 +96,28 @@ function parseSheetData<T>(values: any[][], headerRowIndex: number = 0): T[] {
   });
 }
 
+const apiCache: Record<string, { data: any, timestamp: number }> = {};
+const CACHE_TTL = 60000; // 60 seconds
+
+export const invalidateCache = (sheetName?: string) => {
+  if (sheetName) {
+    delete apiCache[sheetName];
+    // Special case: if Tasks changes, Analytics might also change
+    if (sheetName !== 'Analytics') delete apiCache['Analytics'];
+  } else {
+    for (const key in apiCache) delete apiCache[key];
+  }
+};
+
 /**
  * Fetch a specific sheet tab using the Google Sheets API v4.
  */
 export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, accessToken: string, headerRowIndex: number = 0): Promise<T[]> {
   if (!spreadsheetId || !accessToken) return [];
+  
+  if (apiCache[sheetName] && Date.now() - apiCache[sheetName].timestamp < CACHE_TTL) {
+    return apiCache[sheetName].data as T[];
+  }
   
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:Z`;
   
@@ -115,7 +132,9 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
   }
 
   const data = await response.json();
-  return parseSheetData<T>(data.values || [], headerRowIndex);
+  const parsed = parseSheetData<T>(data.values || [], headerRowIndex);
+  apiCache[sheetName] = { data: parsed, timestamp: Date.now() };
+  return parsed;
 }
 
 /**
@@ -123,6 +142,10 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
  */
 export async function getAnalyticsDashboard(spreadsheetId: string, accessToken: string): Promise<AnalyticsData | null> {
   if (!spreadsheetId || !accessToken) return null;
+  
+  if (apiCache['Analytics'] && Date.now() - apiCache['Analytics'].timestamp < CACHE_TTL) {
+    return apiCache['Analytics'].data as AnalyticsData;
+  }
   
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Analytics!A:K`;
   
@@ -212,6 +235,7 @@ export async function getAnalyticsDashboard(spreadsheetId: string, accessToken: 
     }
   }
 
+  apiCache['Analytics'] = { data: analytics, timestamp: Date.now() };
   return analytics;
 }
 
@@ -262,26 +286,25 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
   const slicedRow = orderedRow.slice(startColIndex);
 
   // 3. Append the ordered array using the specific column letter so it finds the true bottom of the table
-  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${startColLetter}:${startColLetter}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const appendRange = `${sheetName}!${startColLetter}:${startColLetter}`;
+  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(appendRange)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   
-  const appendResponse = await fetch(appendUrl, {
+  const appendRes = await fetch(appendUrl, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      range: `${sheetName}!${startColLetter}:${startColLetter}`,
+      range: appendRange,
       majorDimension: 'ROWS',
-      values: [slicedRow],
-    }),
+      values: [slicedRow]
+    })
   });
 
-  if (!appendResponse.ok) {
-    const errText = await appendResponse.text();
-    throw new Error(`Failed to append to sheet ${sheetName}: ${errText}`);
+  if (!appendRes.ok) {
+    const errText = await appendRes.text();
+    throw new Error(`Failed to append row to ${sheetName}: ${errText}`);
   }
 
+  invalidateCache(sheetName);
   return true;
 }
 
@@ -329,16 +352,22 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   
   // End column letter
   const endColLetter = String.fromCharCode(65 + startColIndex + slicedRow.length - 1);
-  const range = `${sheetName}!${startColLetter}${rowIndex}:${endColLetter}${rowIndex}`;
+  const updateRange = `${sheetName}!${startColLetter}${rowIndex}:${endColLetter}${rowIndex}`;
 
-  const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
-  const updateResponse = await fetch(updateUrl, {
+  const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(updateRange)}?valueInputOption=USER_ENTERED`;
+  const updateRes = await fetch(updateUrl, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ range, majorDimension: 'ROWS', values: [slicedRow] })
+    body: JSON.stringify({
+      range: updateRange,
+      majorDimension: 'ROWS',
+      values: [slicedRow]
+    })
   });
 
-  if (!updateResponse.ok) throw new Error(`Failed to update row: ${await updateResponse.text()}`);
+  if (!updateRes.ok) throw new Error(`Failed to update row in ${sheetName}: ${await updateRes.text()}`);
+  
+  invalidateCache(sheetName);
   return true;
 }
 
@@ -382,6 +411,8 @@ export async function deleteRow(sheetName: string, rowIndex: number, spreadsheet
   });
 
   if (!batchRes.ok) throw new Error(`Failed to delete row: ${await batchRes.text()}`);
+  
+  invalidateCache(sheetName);
   return true;
 }
 
