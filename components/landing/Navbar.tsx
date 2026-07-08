@@ -107,7 +107,7 @@ const Navbar: React.FC = () => {
 
           <button
             onClick={() => setIsOpen(true)}
-            className="justify-self-end rounded-full p-2 text-white transition-colors hover:text-[#B38A33] md:hidden"
+            className="justify-self-end rounded-full border border-white/10 bg-white/[0.03] p-2.5 text-white transition-all active:scale-90 md:hidden hover:bg-white/[0.08]"
             aria-label="Open navigation"
           >
             <Menu className="h-5 w-5" />
@@ -116,16 +116,16 @@ const Navbar: React.FC = () => {
       </nav>
 
       <div
-        className={`fixed inset-0 z-[60] transition-[opacity,visibility] duration-300 ${isOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}
+        className={`fixed inset-0 z-[60] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       >
         <button
-          className="absolute inset-0 bg-black/72 backdrop-blur-md"
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
           aria-label="Close navigation backdrop"
         />
 
         <div
-          className={`absolute right-0 top-0 flex h-full w-full max-w-[28rem] flex-col border-l border-white/10 bg-[#0a0a0f]/96 p-6 shadow-[0_0_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute right-0 top-0 flex h-full w-full max-w-[28rem] flex-col border-l border-white/10 bg-[#050505] p-6 shadow-2xl transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
           <div className="flex items-center justify-between">
             <Link to="/dashboard" onClick={() => setIsOpen(false)}>
@@ -133,7 +133,7 @@ const Navbar: React.FC = () => {
             </Link>
             <button
               onClick={() => setIsOpen(false)}
-              className="rounded-full border border-white/10 p-2 text-white transition-colors hover:border-white/25 hover:text-[#D6B36B]"
+              className="rounded-full border border-white/10 bg-white/[0.03] p-2.5 text-white transition-all active:scale-90 hover:bg-white/[0.08]"
               aria-label="Close navigation"
             >
               <X className="h-5 w-5" />
