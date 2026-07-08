@@ -71,6 +71,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('hos_google_token', currentSession.provider_token);
       localStorage.setItem('hos_google_token_expiry', (new Date().getTime() + 3500 * 1000).toString());
     }
+    
+    // Intercept Google Refresh Token if present
+    if (currentSession?.provider_refresh_token) {
+      localStorage.setItem('hos_google_refresh_token', currentSession.provider_refresh_token);
+    }
 
     setSession(currentSession);
     setUser(currentSession?.user ?? null);

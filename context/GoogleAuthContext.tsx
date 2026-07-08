@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface GoogleAuthContextType {
@@ -17,6 +17,45 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [spreadsheetId, setSpreadsheetIdState] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const isRefreshingRef = useRef(false);
+
+  const refreshGoogleToken = async () => {
+    if (isRefreshingRef.current) return;
+    
+    const refreshToken = localStorage.getItem('hos_google_refresh_token');
+    if (!refreshToken) {
+      localStorage.removeItem('hos_google_token');
+      localStorage.removeItem('hos_google_token_expiry');
+      setAccessToken(null);
+      return;
+    }
+
+    isRefreshingRef.current = true;
+    try {
+      const { data, error } = await supabase.functions.invoke('refresh-google-token', {
+        body: { refresh_token: refreshToken }
+      });
+
+      if (error) throw error;
+      if (data && data.access_token) {
+        const expiresIn = data.expires_in || 3500;
+        const expiryTime = new Date().getTime() + (expiresIn * 1000);
+        
+        localStorage.setItem('hos_google_token', data.access_token);
+        localStorage.setItem('hos_google_token_expiry', expiryTime.toString());
+        setAccessToken(data.access_token);
+      } else {
+        throw new Error('Invalid response from edge function');
+      }
+    } catch (err) {
+      console.error('Failed to automatically refresh Google token:', err);
+      localStorage.removeItem('hos_google_token');
+      localStorage.removeItem('hos_google_token_expiry');
+      setAccessToken(null);
+    } finally {
+      isRefreshingRef.current = false;
+    }
+  };
 
   // Function to sync token from localStorage (set by AuthContext on Supabase login)
   const syncToken = () => {
@@ -24,12 +63,18 @@ export const GoogleAuthProviderContext: React.FC<{ children: React.ReactNode }> 
     const savedTokenExpiry = localStorage.getItem('hos_google_token_expiry');
     
     if (savedToken && savedTokenExpiry) {
-      if (new Date().getTime() < parseInt(savedTokenExpiry)) {
+      const timeRemaining = parseInt(savedTokenExpiry) - new Date().getTime();
+      
+      if (timeRemaining > 300000) { 
+        // Valid and > 5 minutes remaining
         setAccessToken(savedToken);
+      } else if (timeRemaining > 0 && timeRemaining <= 300000) {
+        // Valid but expiring in < 5 mins, start silent refresh
+        setAccessToken(savedToken);
+        refreshGoogleToken();
       } else {
-        localStorage.removeItem('hos_google_token');
-        localStorage.removeItem('hos_google_token_expiry');
-        setAccessToken(null);
+        // Completely expired
+        refreshGoogleToken();
       }
     } else {
       setAccessToken(null);
