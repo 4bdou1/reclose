@@ -140,42 +140,66 @@ const Navbar: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-10 rounded-[2rem] border border-white/8 bg-white/[0.03] p-3">
-            <p className="text-[11px] uppercase tracking-[0.35em] text-white/45">Navigation</p>
-            <div className="mt-4 space-y-2">
-              {navLinks.map((link, index) => (
+          <div className="mt-8">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-white/45 mb-4 px-2">Navigation</p>
+            <div className="space-y-3">
+              {[
+                { label: 'Why REclose?', subtitle: 'Our mission and approach', href: '#why-reclose', glow: 'from-blue-500/10 via-blue-500/5 to-transparent', border: 'border-blue-500/30', text: 'text-blue-400' },
+                { label: 'Process', subtitle: 'From strategy to execution', href: '#how-we-work', glow: 'from-emerald-500/10 via-emerald-500/5 to-transparent', border: 'border-emerald-500/30', text: 'text-emerald-400' },
+                { label: 'Our Work', subtitle: 'Selected projects', href: '#work', glow: 'from-purple-500/10 via-purple-500/5 to-transparent', border: 'border-purple-500/30', text: 'text-purple-400' },
+                { label: 'Start', subtitle: "Let's build together", href: '#get-started', glow: 'from-orange-500/10 via-orange-500/5 to-transparent', border: 'border-orange-500/30', text: 'text-orange-400' },
+              ].map((link, index) => (
                 <a
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className="lux-button flex items-center justify-between rounded-[1.4rem] border border-white/6 bg-black/25 px-4 py-4 hover:border-[#D6B36B]/30 hover:bg-white/[0.04]"
+                  className={`flex items-center justify-between rounded-2xl border ${link.border} bg-gradient-to-r ${link.glow} px-5 py-4 transition-all hover:scale-[1.02]`}
                 >
-                  <span className="text-sm text-white/40">0{index + 1}</span>
-                  <span className="text-lg font-medium text-white">{link.label}</span>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-lg font-mono ${link.text}`}>0{index + 1}</span>
+                    <div className="flex flex-col">
+                      <span className="text-lg font-medium text-white">{link.label}</span>
+                      <span className="text-[11px] text-white/40">{link.subtitle}</span>
+                    </div>
+                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white/60">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </div>
                 </a>
               ))}
             </div>
           </div>
 
-          <div className="mt-6 rounded-[2rem] border border-white/8 bg-[#0f1116] p-5">
-            <p className="text-[11px] uppercase tracking-[0.35em] text-white/45">Engagement</p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">
-              Premium websites and automation systems for service-led brands.
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-white/62">
-              From positioning and buildout to lead capture and follow-up, the public site is designed to feel as high-touch as the service behind it.
-            </p>
-          </div>
+          <div className="mt-8 rounded-3xl border border-white/5 bg-[#111111] p-6 relative overflow-hidden">
+            <div className="absolute right-[-20%] bottom-10 opacity-30 blur-sm pointer-events-none">
+               <svg viewBox="0 0 100 80" className="w-64 h-64 text-blue-500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="currentColor" strokeWidth="8" strokeLinecap="round"/>
+               </svg>
+            </div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-white/45">Engagement</p>
+                <div className="w-2 h-2 rotate-45 bg-cyan-400"></div>
+              </div>
+              
+              <h3 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white pr-10">
+                Premium websites and automation systems for service-led brands.
+              </h3>
+              <p className="mt-4 text-xs leading-5 text-white/50 max-w-[85%]">
+                From positioning and buildout to lead capture and follow-up, the public site is designed to feel as high-touch as the service behind it.
+              </p>
 
-          <div className="mt-auto space-y-3">
-            <a
-              href="#get-started"
-              onClick={() => setIsOpen(false)}
-              className="lux-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#D6B36B] px-5 py-3.5 text-sm font-semibold text-black shadow-[0_14px_35px_rgba(214,179,107,0.26)] hover:bg-[#e2c27c]"
-            >
-              Start Your Project
-              <ArrowUpRight className="h-4 w-4" />
-            </a>
+              <a
+                href="#get-started"
+                onClick={() => setIsOpen(false)}
+                className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-cyan-400 hover:bg-white/5 transition-colors"
+              >
+                Learn More 
+                <ArrowUpRight className="h-3 w-3" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
