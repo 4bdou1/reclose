@@ -4,8 +4,10 @@ import { googleSheetsAPI, AnalyticsData } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { supabase, Mission } from '../lib/supabase';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const Overview: React.FC = () => {
+  const { user } = useAuth();
   const { accessToken, spreadsheetId, isReady } = useGoogleAuth();
   const { data: tasksData, loading: tasksLoading } = useSheetsData(googleSheetsAPI.getTasks);
   
@@ -30,9 +32,12 @@ const Overview: React.FC = () => {
   
   const activities = activityLogs.filter(a => isSinceYesterday(a.created_at));
   
+  const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
+
   const deadlines = tasksData 
     ? tasksData
         .filter(t => t.status !== 'Completed' && t.status !== 'Done' && t.deadline)
+        .filter(t => !t.user || t.user.toLowerCase() === ownerName.toLowerCase())
         .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
         .slice(0, 3)
     : [];

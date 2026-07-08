@@ -23,7 +23,14 @@ const Tasks: React.FC = () => {
   const [newTaskInput, setNewTaskInput] = useState('');
   const [parsedPreview, setParsedPreview] = useState<ParsedTask | null>(null);
 
+  const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
+
   const filteredTasks = tasks.filter(t => {
+    // Only show tasks that belong to the current user
+    if (t.user && t.user.toLowerCase() !== ownerName.toLowerCase()) {
+      return false;
+    }
+
     // Hide completed tasks that are older than 12 hours
     if (t.status?.toLowerCase() === 'done' && t.completed_at) {
       const completedTime = new Date(t.completed_at).getTime();
