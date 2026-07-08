@@ -45,3 +45,29 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 INSERT INTO app_settings (id, spreadsheet_id) VALUES (1, '') ON CONFLICT DO NOTHING;
 
+-- 4. Files Library
+CREATE TABLE IF NOT EXISTS files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_name TEXT NOT NULL,
+  category TEXT DEFAULT 'All Files',
+  file_url TEXT NOT NULL,
+  file_type TEXT NOT NULL, -- 'pdf' or 'link'
+  uploaded_by_id UUID REFERENCES auth.users(id),
+  uploaded_by_name TEXT,
+  visibility TEXT DEFAULT 'for all', -- 'for all' or 'for me'
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Secure the table
+ALTER TABLE files ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "View public or own files" ON files FOR SELECT USING (visibility = 'for all' OR uploaded_by_id = auth.uid());
+CREATE POLICY "Upload files" ON files FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Delete own files" ON files FOR DELETE USING (uploaded_by_id = auth.uid());
+ALTER PUBLICATION supabase_realtime ADD TABLE files;
+
+-- Create the Storage Bucket for PDFs
+INSERT INTO storage.buckets (id, name, public) VALUES ('dashboard-files', 'dashboard-files', true) ON CONFLICT DO NOTHING;
+CREATE POLICY "Public read PDFs" ON storage.objects FOR SELECT USING (bucket_id = 'dashboard-files');
+CREATE POLICY "Auth upload PDFs" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'dashboard-files' AND auth.role() = 'authenticated');
+CREATE POLICY "Delete own PDFs" ON storage.objects FOR DELETE USING (bucket_id = 'dashboard-files' AND auth.uid() = owner);
+
