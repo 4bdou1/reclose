@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Folder, File as FileIcon, FileText, Image, MoreVertical, ExternalLink, Plus, X, UploadCloud, Loader2, Trash2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, logDashboardActivity } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
@@ -110,6 +110,7 @@ const Files: React.FC = () => {
 
       if (dbError) throw dbError;
 
+      logDashboardActivity(uploaderName, 'File Uploaded', `Uploaded a new file: ${newFileName}`);
       toast.success('File uploaded successfully!');
       setIsModalOpen(false);
       resetModal();
@@ -165,6 +166,13 @@ const Files: React.FC = () => {
       case 'pitch decks': return <FileText className="w-5 h-5 text-blue-500" />;
       default: return <FileIcon className="w-5 h-5 text-gray-400" />;
     }
+  };
+
+  const getYoutubeVideoId = (url: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
   };
 
   return (
@@ -226,10 +234,17 @@ const Files: React.FC = () => {
           ) : (
             <div className="premium-card overflow-hidden">
               <div className="divide-y divide-gray-100">
-                {filteredFiles.map((file) => (
+                {filteredFiles.map((file) => {
+                  const ytVideoId = file.file_type === 'link' ? getYoutubeVideoId(file.file_url) : null;
+                  
+                  return (
                   <div key={file.id} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors group">
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-                      {getFileIcon(file.category)}
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                      {ytVideoId ? (
+                        <img src={`https://img.youtube.com/vi/${ytVideoId}/default.jpg`} alt="Thumbnail" className="w-full h-full object-cover" />
+                      ) : (
+                        getFileIcon(file.category)
+                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -272,7 +287,8 @@ const Files: React.FC = () => {
                       )}
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
             </div>
           )}

@@ -71,3 +71,17 @@ CREATE POLICY "Public read PDFs" ON storage.objects FOR SELECT USING (bucket_id 
 CREATE POLICY "Auth upload PDFs" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'dashboard-files' AND auth.role() = 'authenticated');
 CREATE POLICY "Delete own PDFs" ON storage.objects FOR DELETE USING (bucket_id = 'dashboard-files' AND auth.uid() = owner);
 
+-- 5. Native Dashboard Activity Log
+CREATE TABLE IF NOT EXISTS activity_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_name TEXT NOT NULL,
+  action_type TEXT NOT NULL,
+  description TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Everyone can view activity" ON activity_log FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can insert activity" ON activity_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+ALTER PUBLICATION supabase_realtime ADD TABLE activity_log;
+

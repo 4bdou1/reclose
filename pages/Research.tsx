@@ -3,6 +3,8 @@ import { Search, MapPin, Phone, MessageSquare, Mail, Calendar, Loader2, Plus } f
 import { googleSheetsAPI, Research as ResearchData } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
+import { useAuth } from '../context/AuthContext';
+import { logDashboardActivity } from '../lib/supabase';
 import { toast } from 'sonner';
 
 const getContactIcon = (method: string) => {
@@ -243,6 +245,7 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
 const Research: React.FC = () => {
   const { data: researchItems, loading, refetch } = useSheetsData(googleSheetsAPI.getResearch);
   const { spreadsheetId, accessToken } = useGoogleAuth();
+  const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -305,6 +308,8 @@ const Research: React.FC = () => {
       toast.success('New lead created in Google Sheets', {
         style: { background: '#D6B36B', color: '#000', border: 'none' }
       });
+      const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
+      logDashboardActivity(ownerName, 'Research Added', 'Created a new blank lead');
       refetch(); // Pull the newly added row
     } catch (error: any) {
       toast.error('Failed to add lead: ' + error.message);

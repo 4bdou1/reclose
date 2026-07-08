@@ -1,24 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, FileText, Microscope, RefreshCw, ChevronRight, Activity as ActivityIcon } from 'lucide-react';
 import { googleSheetsAPI } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
+import { supabase } from '../lib/supabase';
 
 const Overview: React.FC = () => {
   const { data: goalsData, loading: goalsLoading } = useSheetsData(googleSheetsAPI.getGoals);
-  const { data: activityData, loading: activityLoading } = useSheetsData(googleSheetsAPI.getActivity);
   const { data: tasksData, loading: tasksLoading } = useSheetsData(googleSheetsAPI.getTasks);
+  
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [isActivityLoading, setIsActivityLoading] = useState(true);
 
-  const loading = goalsLoading || activityLoading || tasksLoading;
+  const loading = goalsLoading || tasksLoading || isActivityLoading;
   
   const goal = goalsData && goalsData.length > 0 ? goalsData[0] : null;
-  const activities = activityData ? activityData.slice(0, 4) : [];
+  const activities = activityLogs.slice(0, 4);
   
   const deadlines = tasksData 
     ? tasksData
-        .filter(t => t.status !== 'Completed' && t.deadline)
+        .filter(t => t.status !== 'Completed' && t.status !== 'Done' && t.deadline)
         .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
         .slice(0, 3)
     : [];
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setIsActivityLoading(true);
+      const { data, error } = await supabase
+        .from('activity_log')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (!error && data) {
+        setActivityLogs(data);
+      }
+      setIsActivityLoading(false);
+    };
+    
+    fetchActivities();
+    
+    // Optional: Realtime subscription for instant dashboard updates
+    const subscription = supabase
+      .channel('activity_changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, fetchActivities)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
 
   const calculateDaysLeft = (targetDate: string) => {
     if (!targetDate) return 0;
@@ -32,6 +62,15 @@ const Overview: React.FC = () => {
     return Math.round((c / t) * 100);
   };
 
+  const isSinceYesterday = (dateString: string) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return false;
+    const yesterday = new Date();
+    yesterday.setHours(yesterday.getHours() - 24);
+    return date.getTime() > yesterday.getTime();
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col gap-6 animate-pulse">
@@ -42,12 +81,17 @@ const Overview: React.FC = () => {
     );
   }
 
-  // Placeholder metric numbers since these are derived from activity history which might not be fully structured yet
+  // Count actions from the native activity log that happened in the last 24 hours
+  const tasksUpdated = activityLogs.filter(a => (a.action_type === 'Task Added' || a.action_type === 'Task Updated') && isSinceYesterday(a.created_at)).length;
+  const tasksCompleted = activityLogs.filter(a => a.action_type === 'Task Completed' && isSinceYesterday(a.created_at)).length;
+  const newResearch = activityLogs.filter(a => a.action_type === 'Research Added' && isSinceYesterday(a.created_at)).length;
+  const newFilesCount = activityLogs.filter(a => a.action_type === 'File Uploaded' && isSinceYesterday(a.created_at)).length;
+
   const metrics = [
-    { icon: RefreshCw, value: '5', label: 'Tasks updated', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { icon: CheckCircle2, value: '3', label: 'Tasks completed', color: 'text-green-500', bg: 'bg-green-500/10' },
-    { icon: Microscope, value: '2', label: 'New research items', color: 'text-purple-500', bg: 'bg-purple-500/10' },
-    { icon: FileText, value: '1', label: 'New file added', color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { icon: RefreshCw, value: tasksUpdated.toString(), label: 'Tasks added/updated', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { icon: CheckCircle2, value: tasksCompleted.toString(), label: 'Tasks completed', color: 'text-green-500', bg: 'bg-green-500/10' },
+    { icon: Microscope, value: newResearch.toString(), label: 'New research items', color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { icon: FileText, value: newFilesCount.toString(), label: 'New files added', color: 'text-orange-500', bg: 'bg-orange-500/10' },
   ];
 
   return (
@@ -125,18 +169,21 @@ const Overview: React.FC = () => {
         
         <div className="premium-card overflow-hidden">
           <div className="divide-y divide-gray-100/50">
-            {activities.length > 0 ? activities.map((activity, idx) => (
-              <div key={idx} className="flex items-start gap-4 p-4 hover:bg-gray-50/50 transition-colors cursor-pointer group">
-                <div className="mt-0.5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-gray-200 transition-colors">
-                  <ActivityIcon className="w-4 h-4 text-gray-600" />
+            {activities.length > 0 ? activities.map((activity, idx) => {
+              const formattedTime = new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              return (
+                <div key={idx} className="flex items-start gap-4 p-4 hover:bg-gray-50/50 transition-colors cursor-pointer group">
+                  <div className="mt-0.5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-gray-200 transition-colors">
+                    <ActivityIcon className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{activity.user_name} <span className="font-normal text-gray-500">{activity.action_type}</span></p>
+                    <p className="text-xs text-[#050505] truncate">"{activity.description}"</p>
+                  </div>
+                  <span className="text-[10px] text-gray-400 font-medium shrink-0 whitespace-nowrap">{formattedTime}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{activity.owner} <span className="font-normal text-gray-500">{activity.action_type}</span></p>
-                  <p className="text-xs text-[#050505] truncate">"{activity.description}"</p>
-                </div>
-                <span className="text-[10px] text-gray-400 font-medium shrink-0 whitespace-nowrap">{activity.timestamp}</span>
-              </div>
-            )) : (
+              );
+            }) : (
               <div className="p-8 text-center text-sm text-gray-500">No recent activity found.</div>
             )}
           </div>

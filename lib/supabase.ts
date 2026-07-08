@@ -156,3 +156,16 @@ export interface Profile {
 
 // API URL for backend
 export const API_URL = import.meta.env.VITE_API_URL || 'https://4ca99975-c6ee-4715-b344-46b4ebe8a637.preview.emergentagent.com';
+
+export const logDashboardActivity = async (userName: string, actionType: string, description: string) => {
+  try {
+    const { error } = await supabase.from('activity_log').insert({
+      user_name: userName,
+      action_type: actionType,
+      description: description
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.error('Failed to log dashboard activity:', err);
+  }
+};
