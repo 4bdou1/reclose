@@ -178,23 +178,18 @@ const Navbar: React.FC = () => {
                </svg>
             </div>
             
-            <div className="relative z-10 pr-[80px]">
-              <div className="flex items-center gap-2 mb-4">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/45">Engagement</p>
-                <div className="w-2 h-2 rotate-45 bg-[#22d3ee]"></div>
-              </div>
-              
-              <h3 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
+            <div className="relative z-10">
+              <h3 className="text-xl font-bold tracking-[-0.02em] text-white">
                 Marketing, websites and automation systems for service-led brands.
               </h3>
-              <p className="mt-4 text-xs leading-5 text-white/50 max-w-[90%]">
+              <p className="mt-3 text-xs leading-5 text-white/50 max-w-[85%] relative z-20">
                 From positioning and buildout to lead capture and follow-up, the public site is designed to feel as high-touch as the service behind it.
               </p>
 
               <a
                 href="#get-started"
                 onClick={() => setIsOpen(false)}
-                className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-[#22d3ee] hover:bg-white/5 transition-colors"
+                className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-[#22d3ee] hover:bg-white/5 transition-colors relative z-20"
               >
                 Learn More 
                 <ArrowUpRight className="h-3 w-3" />
