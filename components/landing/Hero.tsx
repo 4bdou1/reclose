@@ -14,7 +14,6 @@ const Hero: React.FC = () => {
       <div className="pointer-events-none absolute inset-0">
         <SplineRocket />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(214,179,107,0.16),transparent_32%)]" />
-        <div className="absolute left-[6%] top-[8%] h-40 w-40 rounded-full border border-black/6" />
         <div className="absolute right-[8%] top-[18%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgba(214,179,107,0.12),transparent_70%)]" />
         <div className="absolute bottom-10 left-[-5%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,rgba(6,182,212,0.10),transparent_70%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,0.85)_0%,rgba(5,5,5,0)_38%)]" />
@@ -23,11 +22,6 @@ const Hero: React.FC = () => {
       <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:gap-14">
         <Reveal width="100%" className="w-full">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D6B36B]/35 bg-[#D6B36B]/10 px-4 py-2 text-[11px] uppercase tracking-[0.35em] text-[#9b7424]">
-              <Sparkles className="h-3.5 w-3.5" />
-              Digital Growth Agency
-            </div>
-
             <h1 className="mt-6 text-balance text-[clamp(3.6rem,8vw,7.2rem)] font-semibold leading-[0.93] tracking-[-0.06em] text-white">
               Build.
               <span className="block font-swash font-medium italic text-[#ba8c2c]">Grow.</span>
