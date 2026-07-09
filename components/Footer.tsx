@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto mt-12 flex max-w-7xl flex-col gap-3 border-t border-white/8 pt-6 text-xs uppercase tracking-[0.3em] text-white/36 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative z-10 mx-auto mt-12 flex max-w-7xl flex-col gap-3 pt-6 text-xs uppercase tracking-[0.3em] text-white/36 sm:flex-row sm:items-center sm:justify-between">
         <p>&copy; {new Date().getFullYear()} REclose.</p>
         <p>Digital growth systems.</p>
       </div>
