@@ -23,7 +23,7 @@ const Hero: React.FC = () => {
           <div className="max-w-3xl">
             <h1 className="mt-6 text-balance text-[clamp(3.6rem,8vw,7.2rem)] font-semibold leading-[0.93] tracking-[-0.06em] text-white">
               Build.
-              <span className="block font-swash font-medium italic text-[#ba8c2c]">Grow.</span>
+              <span className="block font-swash font-medium italic text-[#ba8c2c]">Scale.</span>
               Automate.
             </h1>
 
