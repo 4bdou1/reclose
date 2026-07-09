@@ -19,7 +19,7 @@ const Hero: React.FC = () => {
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,0.85)_0%,rgba(5,5,5,0)_38%)]" />
       </div>
 
-      <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:gap-14">
+      <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:gap-14">
         <Reveal width="100%" className="w-full">
           <div className="max-w-3xl">
             <h1 className="mt-6 text-balance text-[clamp(3.6rem,8vw,7.2rem)] font-semibold leading-[0.93] tracking-[-0.06em] text-white">
