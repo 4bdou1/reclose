@@ -1,5 +1,6 @@
 import React from 'react';
 import Logo from './Logo';
+import { TextHoverEffect, FooterBackgroundGradient } from '@/components/ui/hover-footer';
 
 const HOSLogo = () => (
   <div className="mt-6 flex items-center gap-4">
@@ -65,6 +66,13 @@ const Footer: React.FC = () => {
         <p>&copy; {new Date().getFullYear()} REclose.</p>
         <p>Digital growth systems.</p>
       </div>
+
+      {/* Text hover effect */}
+      <div className="lg:flex hidden h-[24rem] -mt-20 -mb-24 w-full max-w-7xl mx-auto relative z-10 pointer-events-auto">
+        <TextHoverEffect text="RECLOSE" className="z-50" />
+      </div>
+
+      <FooterBackgroundGradient />
     </footer>
   );
 };
