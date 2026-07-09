@@ -12,6 +12,7 @@ const Hero: React.FC = () => {
   return (
     <section id="top" className="relative flex min-h-screen items-center overflow-hidden bg-[#050505] px-4 pb-24 pt-32 text-white sm:px-6 lg:px-8 lg:pb-32 lg:pt-36">
       <div className="pointer-events-none absolute inset-0">
+        <SplineRocket />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(214,179,107,0.16),transparent_32%)]" />
         <div className="absolute left-[6%] top-[8%] h-40 w-40 rounded-full border border-black/6" />
         <div className="absolute right-[8%] top-[18%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgba(214,179,107,0.12),transparent_70%)]" />
@@ -105,6 +106,40 @@ const Hero: React.FC = () => {
         </Reveal>
       </div>
     </section>
+  );
+};
+
+const SplineRocket: React.FC = () => {
+  React.useEffect(() => {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = 'https://unpkg.com/@splinetool/viewer@1.12.98/build/spline-viewer.js';
+    document.head.appendChild(script);
+
+    const removeSplineLogo = setInterval(() => {
+      const viewer = document.querySelector('spline-viewer');
+      if (viewer && viewer.shadowRoot) {
+        const logo = viewer.shadowRoot.querySelector('#logo');
+        if (logo) {
+          logo.remove();
+          clearInterval(removeSplineLogo);
+        }
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(removeSplineLogo);
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="absolute top-1/2 right-[-20%] w-[600px] h-[600px] -translate-y-1/2 opacity-70 pointer-events-auto md:w-[800px] md:h-[800px] md:right-[-5%] lg:right-[5%] z-0 mix-blend-screen">
+      {/* @ts-ignore */}
+      <spline-viewer url="https://prod.spline.design/9dJTIFucV-KyX7hc/scene.splinecode"></spline-viewer>
+    </div>
   );
 };
 
