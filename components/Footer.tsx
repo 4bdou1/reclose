@@ -18,9 +18,11 @@ const HOSLogo = () => (
 
 const Footer: React.FC = () => {
   return (
-    <footer className="relative overflow-hidden bg-[#050505] px-4 py-14 text-white sm:px-6 lg:px-8">
+    <footer className="relative overflow-hidden px-4 py-14 text-white sm:px-6 lg:px-8 z-20">
+      {/* Solid Base Background to block parallax */}
+      <div className="absolute inset-0 bg-[#050505] -z-10" />
       {/* Background Image Layer */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none -z-0">
         <img 
           src="/footer.png" 
           alt="" 
