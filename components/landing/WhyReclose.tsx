@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, Globe, Zap } from 'lucide-react';
 import Reveal from '../Reveal';
+import { DiaText } from '@/components/ui/dia-text';
 
 const WhyReclose: React.FC = () => {
   const pillars = [
@@ -34,7 +35,12 @@ const WhyReclose: React.FC = () => {
           <Reveal>
             <h2 className="text-base font-semibold leading-7 text-[#ba8c2c] uppercase tracking-widest">Why REclose?</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl mb-8">
-              Everything your business needs to grow.
+              Everything your business needs to{" "}
+              <DiaText
+                repeat
+                repeatDelay={1.1}
+                text={["grow.", "scale.", "thrive.", "expand.", "evolve.", "accelerate.", "advance.", "flourish."]}
+              />
             </p>
             <div className="space-y-4 text-lg leading-8 text-gray-400">
               <p>Because growth is not just about getting attention.</p>
