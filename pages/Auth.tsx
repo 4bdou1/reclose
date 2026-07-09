@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,14 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Force the entire page background to be dark while on the Auth screen
+  useEffect(() => {
+    document.body.style.backgroundColor = '#050505';
+    return () => {
+      document.body.style.backgroundColor = '';
+    };
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
