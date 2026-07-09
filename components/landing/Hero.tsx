@@ -11,11 +11,62 @@ import Reveal from '../Reveal';
 const Hero: React.FC = () => {
   return (
     <section id="top" className="relative flex min-h-screen items-center overflow-hidden bg-[#050505] px-4 pb-24 pt-32 text-white sm:px-6 lg:px-8 lg:pb-32 lg:pt-36">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(214,179,107,0.16),transparent_32%)]" />
-        <div className="absolute right-[8%] top-[18%] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgba(214,179,107,0.12),transparent_70%)]" />
-        <div className="absolute bottom-10 left-[-5%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,rgba(6,182,212,0.10),transparent_70%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,0.85)_0%,rgba(5,5,5,0)_38%)]" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Dot Grid Pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.2]" 
+          style={{ 
+            backgroundImage: 'radial-gradient(circle at center, rgba(255,255,255,0.8) 1px, transparent 1px)', 
+            backgroundSize: '32px 32px',
+            maskImage: 'linear-gradient(to bottom, transparent 10%, black 50%, transparent 95%)'
+          }} 
+        />
+
+        {/* Orbital Circles & Center Cube (Top Right) */}
+        <div className="absolute right-[-15%] top-[-5%] w-[800px] h-[800px] opacity-70 md:right-[-5%] md:top-[-10%]">
+          <svg viewBox="0 0 800 800" className="w-full h-full animate-[spin_60s_linear_infinite]">
+            <circle cx="400" cy="400" r="320" stroke="rgba(255,255,255,0.06)" strokeWidth="1" fill="none" />
+            <circle cx="400" cy="400" r="320" stroke="#3B82F6" strokeWidth="2" strokeDasharray="150 1500" strokeLinecap="round" fill="none" className="opacity-80 drop-shadow-[0_0_10px_#3B82F6]" />
+            
+            <circle cx="400" cy="400" r="240" stroke="rgba(255,255,255,0.06)" strokeWidth="1" fill="none" />
+            <circle cx="400" cy="400" r="240" stroke="#D6B36B" strokeWidth="1" strokeDasharray="80 1000" strokeLinecap="round" fill="none" className="opacity-70 drop-shadow-[0_0_10px_#D6B36B]" />
+            
+            <circle cx="400" cy="400" r="160" stroke="rgba(255,255,255,0.06)" strokeWidth="1" fill="none" />
+            <circle cx="400" cy="400" r="160" stroke="#3B82F6" strokeWidth="1" strokeDasharray="40 600" strokeLinecap="round" fill="none" className="opacity-50" />
+            
+            <circle cx="80" cy="400" r="3" fill="#3B82F6" className="drop-shadow-[0_0_8px_#3B82F6]" />
+            <circle cx="400" cy="160" r="2.5" fill="#D6B36B" className="drop-shadow-[0_0_8px_#D6B36B]" />
+            <circle cx="640" cy="540" r="3.5" fill="#fff" className="drop-shadow-[0_0_8px_#fff]" />
+          </svg>
+          
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-[2rem] bg-gradient-to-br from-white/10 via-transparent to-transparent p-[1px] shadow-[0_0_60px_rgba(59,130,246,0.15)] transform -rotate-12 backdrop-blur-md">
+            <div className="w-full h-full rounded-[2rem] bg-gradient-to-b from-[#111115] to-[#050505] flex items-center justify-center shadow-[inset_0_4px_20px_rgba(0,0,0,0.5)]">
+               <svg viewBox="0 0 100 80" className="w-20 h-20 opacity-30 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+               </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Circuit Connection Lines (Bottom Left to Center) */}
+        <div className="absolute bottom-[10%] left-0 w-full h-[500px] opacity-[0.35]">
+           <svg viewBox="0 0 1000 500" className="w-full h-full" preserveAspectRatio="xMidYMax slice">
+             <path d="M100 350 L200 350 L200 200 L450 200 L450 150" fill="none" stroke="#3B82F6" strokeWidth="1" strokeDasharray="4 4" />
+             <circle cx="100" cy="350" r="3" fill="#3B82F6" />
+             <circle cx="450" cy="150" r="3" fill="#3B82F6" />
+             
+             <path d="M300 450 L300 350 L400 350 L400 280 L550 280" fill="none" stroke="#10B981" strokeWidth="1" strokeDasharray="3 4" />
+             <circle cx="300" cy="450" r="2.5" fill="#10B981" />
+             <circle cx="550" cy="280" r="2.5" fill="#10B981" />
+
+             <path d="M800 400 L700 400 L700 250 L600 250" fill="none" stroke="#D6B36B" strokeWidth="1" strokeDasharray="4 4" />
+             <circle cx="800" cy="400" r="3" fill="#D6B36B" />
+             <circle cx="600" cy="250" r="3" fill="#D6B36B" />
+           </svg>
+        </div>
+        
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,0.95)_0%,rgba(5,5,5,0)_40%,rgba(5,5,5,0.7)_100%)] pointer-events-none" />
       </div>
 
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:gap-14">
