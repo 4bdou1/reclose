@@ -18,14 +18,16 @@ const HOSLogo = () => (
 
 const Footer: React.FC = () => {
   return (
-    <footer 
-      className="relative overflow-hidden border-t border-white/8 px-4 py-14 text-white sm:px-6 lg:px-8 bg-[#050505]"
-      style={{
-        backgroundImage: 'url("/footer.png")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
+    <footer className="relative overflow-hidden border-t border-white/8 bg-[#050505] px-4 py-14 text-white sm:px-6 lg:px-8">
+      {/* Background Image Layer */}
+      <div className="absolute inset-0 pointer-events-none">
+        <img 
+          src="/footer.png" 
+          alt="" 
+          className="w-full h-full object-cover" 
+        />
+      </div>
+
       <div className="relative z-10 mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.6fr_0.6fr]">
         <div>
           <Logo size="sm" className="items-start" theme="dark" />
