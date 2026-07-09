@@ -130,7 +130,8 @@ const SplineRocket: React.FC = () => {
   }, []);
 
   return (
-    <div className="absolute top-[35%] right-[-20%] w-[600px] h-[600px] -translate-y-1/2 opacity-70 pointer-events-auto md:w-[800px] md:h-[800px] md:right-[-5%] lg:right-[5%] z-0 mix-blend-screen">
+    <div className="absolute top-[35%] right-[-20%] w-[600px] h-[600px] -translate-y-1/2 pointer-events-none md:w-[800px] md:h-[800px] md:right-[-5%] lg:right-[5%] z-0">
+      <div className="absolute inset-0 bg-[#050505]/40 z-10 pointer-events-none rounded-full" />
       {/* @ts-ignore */}
       <spline-viewer url="https://prod.spline.design/9dJTIFucV-KyX7hc/scene.splinecode"></spline-viewer>
     </div>
