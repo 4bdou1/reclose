@@ -68,7 +68,7 @@ const Hero: React.FC = () => {
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
-                href="#get-started"
+                href="mailto:hello@reclose.ai?subject=Discovery%20Call%20-%20REclose&body=Hi%20REclose%20Team%2C%0A%0AI%E2%80%99d%20like%20to%20book%20a%20discovery%20call%20to%20explore%20how%20we%20can%20improve%20our%20current%20client%20acquisition%20and%20growth%20systems.%0A%0AA%20few%20details%20about%20my%20business%3A%0A%0ACompany%3A%20%0AIndustry%3A%20%0AMain%20challenge%20right%20now%3A%20%0ACurrent%20goal%3A%20%0A%0ALooking%20forward%20to%20seeing%20what%20opportunities%20we%20can%20unlock.%0A%0ABest%2C%0A%5BName%5D"
                 className="lux-button inline-flex items-center justify-center gap-2 rounded-full bg-[#111318] px-6 py-4 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(17,19,24,0.16)] hover:bg-[#1d2026]"
               >
                 Book a Discovery Call

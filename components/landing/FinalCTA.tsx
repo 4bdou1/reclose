@@ -23,7 +23,7 @@ const FinalCTA: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
             <a
-              href="mailto:contact@reclose.com" // Update to actual booking link if available
+              href="mailto:hello@reclose.ai?subject=Discovery%20Call%20-%20REclose&body=Hi%20REclose%20Team%2C%0A%0AI%E2%80%99d%20like%20to%20book%20a%20discovery%20call%20to%20explore%20how%20we%20can%20improve%20our%20current%20client%20acquisition%20and%20growth%20systems.%0A%0AA%20few%20details%20about%20my%20business%3A%0A%0ACompany%3A%20%0AIndustry%3A%20%0AMain%20challenge%20right%20now%3A%20%0ACurrent%20goal%3A%20%0A%0ALooking%20forward%20to%20seeing%20what%20opportunities%20we%20can%20unlock.%0A%0ABest%2C%0A%5BName%5D"
               className="lux-button inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-5 text-sm font-semibold text-black shadow-lg hover:bg-gray-100 transition-all w-full sm:w-auto"
             >
               Book a Discovery Call
