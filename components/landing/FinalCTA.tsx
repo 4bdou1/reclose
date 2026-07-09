@@ -8,7 +8,6 @@ const FinalCTA: React.FC = () => {
       {/* Background Effects */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(214,179,107,0.1),transparent_50%)]" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D6B36B]/20 to-transparent" />
       </div>
 
       <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center relative z-10">
