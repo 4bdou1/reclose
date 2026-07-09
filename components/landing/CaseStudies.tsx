@@ -31,7 +31,7 @@ const projects = [
 
 const CaseStudies: React.FC = () => {
   return (
-    <section id="work" className="bg-[#050505] py-24 sm:py-32">
+    <section id="work" className="bg-transparent py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
           <div className="max-w-2xl">

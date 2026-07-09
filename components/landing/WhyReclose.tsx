@@ -28,7 +28,7 @@ const WhyReclose: React.FC = () => {
   ];
 
   return (
-    <section id="why-reclose" className="relative bg-[#050505] py-24 sm:py-32 overflow-hidden">
+    <section id="why-reclose" className="relative bg-transparent py-24 sm:py-32 overflow-hidden">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:text-center">
           <Reveal>

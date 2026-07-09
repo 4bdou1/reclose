@@ -10,8 +10,8 @@ import Reveal from '../Reveal';
 
 const Hero: React.FC = () => {
   return (
-    <section id="top" className="relative flex min-h-screen items-center overflow-hidden bg-[#050505] px-4 pb-24 pt-32 text-white sm:px-6 lg:px-8 lg:pb-32 lg:pt-36">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+    <section id="top" className="relative flex min-h-screen items-center bg-transparent px-4 pb-24 pt-32 text-white sm:px-6 lg:px-8 lg:pb-32 lg:pt-36">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-[0]">
         {/* Dot Grid Pattern */}
         <div 
           className="absolute inset-0 opacity-[0.2]" 
