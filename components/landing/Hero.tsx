@@ -49,22 +49,6 @@ const Hero: React.FC = () => {
           </div>
         </div>
 
-        {/* Floating Circuit Connection Lines (Bottom Left to Center) */}
-        <div className="absolute bottom-[10%] left-0 w-full h-[500px] opacity-[0.35]">
-           <svg viewBox="0 0 1000 500" className="w-full h-full" preserveAspectRatio="xMidYMax slice">
-             <path d="M100 350 L200 350 L200 200 L450 200 L450 150" fill="none" stroke="#3B82F6" strokeWidth="1" strokeDasharray="4 4" />
-             <circle cx="100" cy="350" r="3" fill="#3B82F6" />
-             <circle cx="450" cy="150" r="3" fill="#3B82F6" />
-             
-             <path d="M300 450 L300 350 L400 350 L400 280 L550 280" fill="none" stroke="#10B981" strokeWidth="1" strokeDasharray="3 4" />
-             <circle cx="300" cy="450" r="2.5" fill="#10B981" />
-             <circle cx="550" cy="280" r="2.5" fill="#10B981" />
-
-             <path d="M800 400 L700 400 L700 250 L600 250" fill="none" stroke="#D6B36B" strokeWidth="1" strokeDasharray="4 4" />
-             <circle cx="800" cy="400" r="3" fill="#D6B36B" />
-             <circle cx="600" cy="250" r="3" fill="#D6B36B" />
-           </svg>
-        </div>
         
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,0.95)_0%,rgba(5,5,5,0)_40%,rgba(5,5,5,0.7)_100%)] pointer-events-none" />
       </div>
