@@ -150,7 +150,7 @@ const Navbar: React.FC = () => {
         />
 
         <div
-          className={`absolute left-0 top-0 flex w-full max-h-[100dvh] overflow-y-auto flex-col border-b border-white/10 bg-[#050505] p-6 pt-24 pb-12 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-y-0' : '-translate-y-full'}`}
+          className={`absolute left-0 top-0 flex w-full max-h-[100dvh] overflow-y-auto flex-col border-b border-white/10 bg-[#050505] p-6 pt-20 pb-12 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? 'translate-y-0' : '-translate-y-full'}`}
         >
 
           <div className="mt-8">
@@ -184,8 +184,8 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="mt-8 rounded-3xl border border-white/5 bg-[#111111] p-6 relative overflow-hidden">
-            <div className="absolute right-[-10px] bottom-[5px] pointer-events-none opacity-[0.5] z-0">
-               <svg viewBox="0 0 100 80" className="w-[160px] h-[160px] drop-shadow-[0_0_15px_rgba(45,212,191,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <div className="absolute right-[-10px] bottom-[0px] pointer-events-none opacity-[0.4] z-0">
+               <svg viewBox="0 0 100 80" className="w-[120px] h-[120px] drop-shadow-[0_0_15px_rgba(45,212,191,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="rc-gradient-mobile" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#4ADE80" />
@@ -198,11 +198,15 @@ const Navbar: React.FC = () => {
                </svg>
             </div>
             
-            <div className="relative z-10">
+            <div className="relative z-10 pr-[50px]">
+              <div className="flex items-center gap-2 mb-4">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-white/45">Engagement</p>
+                <div className="w-2 h-2 rotate-45 bg-[#22d3ee]"></div>
+              </div>
               <h3 className="text-xl font-bold tracking-[-0.02em] text-white">
                 Marketing, websites and automation systems for service-led brands.
               </h3>
-              <p className="mt-3 text-xs leading-5 text-white/50 max-w-[85%] relative z-20">
+              <p className="mt-3 text-xs leading-5 text-white/50 max-w-[95%] relative z-20">
                 From positioning and buildout to lead capture and follow-up, the public site is designed to feel as high-touch as the service behind it.
               </p>
 
