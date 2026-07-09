@@ -21,11 +21,12 @@ const Footer: React.FC = () => {
     <footer className="relative overflow-hidden border-t border-white/8 bg-[#060607] px-4 py-14 text-white sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-0">
         <div 
-          className="absolute inset-0 opacity-[0.03]" 
+          className="absolute inset-0" 
           style={{ 
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M25 25H60C68 25 73 30 73 37C73 44 68 49 60 49H37V80M37 49H50L67 80' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Cpath d='M100 35C105 43 105 60 100 70C93 83 77 85 67 80' stroke='white' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3C/svg%3E")`,
-            backgroundSize: '80px 80px',
-            backgroundRepeat: 'repeat'
+            backgroundImage: 'url("/footer.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
           }}
         />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
