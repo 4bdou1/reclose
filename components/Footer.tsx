@@ -68,7 +68,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Text hover effect */}
-      <div className="lg:flex hidden h-[24rem] -mt-20 -mb-24 w-full max-w-7xl mx-auto relative z-10 pointer-events-auto">
+      <div className="flex h-[12rem] sm:h-[16rem] md:h-[20rem] lg:h-[24rem] -mt-10 sm:-mt-16 lg:-mt-20 -mb-12 sm:-mb-16 lg:-mb-24 w-full max-w-7xl mx-auto relative z-10 pointer-events-auto">
         <TextHoverEffect text="RECLOSE" className="z-50" />
       </div>
 

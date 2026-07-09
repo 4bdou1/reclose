@@ -39,6 +39,14 @@ export const TextHoverEffect = ({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })}
+      onTouchStart={(e) => {
+        setHovered(true);
+        setCursor({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      }}
+      onTouchMove={(e) => {
+        setCursor({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      }}
+      onTouchEnd={() => setHovered(false)}
       className={cn("select-none uppercase cursor-pointer", className)}
     >
       <defs>
