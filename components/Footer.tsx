@@ -19,7 +19,7 @@ const HOSLogo = () => (
 const Footer: React.FC = () => {
   return (
     <footer 
-      className="relative overflow-hidden border-t border-white/8 px-4 py-14 text-white sm:px-6 lg:px-8"
+      className="relative overflow-hidden border-t border-white/8 px-4 py-14 text-white sm:px-6 lg:px-8 bg-[#050505]"
       style={{
         backgroundImage: 'url("/footer.png")',
         backgroundSize: 'cover',

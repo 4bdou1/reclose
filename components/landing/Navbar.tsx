@@ -112,12 +112,6 @@ const Navbar: React.FC = () => {
                 aria-label="Toggle menu"
                 aria-expanded={isOpen}
             >
-                {/* Outer ring */}
-                <div className="absolute inset-0 rounded-full border border-white/10 group-hover:border-white/20 transition-colors duration-500"></div>
-
-                {/* Inner hover fill */}
-                <div className="absolute inset-1 rounded-full bg-white/[0.02] group-hover:bg-white/[0.04] transition-colors duration-400"></div>
-
                 {/* SVG icon */}
                 <svg
                     viewBox="0 0 100 100"
