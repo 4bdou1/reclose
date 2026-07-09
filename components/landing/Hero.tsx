@@ -136,7 +136,7 @@ const SplineRocket: React.FC = () => {
   }, []);
 
   return (
-    <div className="absolute top-1/2 right-[-20%] w-[600px] h-[600px] -translate-y-1/2 opacity-70 pointer-events-auto md:w-[800px] md:h-[800px] md:right-[-5%] lg:right-[5%] z-0 mix-blend-screen">
+    <div className="absolute top-[35%] right-[-20%] w-[600px] h-[600px] -translate-y-1/2 opacity-70 pointer-events-auto md:w-[800px] md:h-[800px] md:right-[-5%] lg:right-[5%] z-0 mix-blend-screen">
       {/* @ts-ignore */}
       <spline-viewer url="https://prod.spline.design/9dJTIFucV-KyX7hc/scene.splinecode"></spline-viewer>
     </div>
