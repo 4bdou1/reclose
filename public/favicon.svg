@@ -1,4 +1,22 @@
 <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="rc-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4ADE80" />
+      <stop offset="50%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+  </defs>
+  <path
+    d="M10 10H45C53 10 58 15 58 22C58 29 53 34 45 34H22V65M22 34H35L52 65"
+    stroke="url(#rc-gradient)"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M85 20C90 28 90 45 85 55C78 68 62 70 52 65"
+    stroke="url(#rc-gradient)"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
 </svg>
