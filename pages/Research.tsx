@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Phone, MessageSquare, Mail, Calendar, Loader2, Plus } from 'lucide-react';
 import { googleSheetsAPI, Research as ResearchData } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
@@ -76,24 +76,31 @@ const formatToSheetTime = (inputTime: string) => {
 const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: number }, onUpdate: (row: any) => void }) => {
   const [data, setData] = useState(item);
   const [isSyncing, setIsSyncing] = useState(false);
+  // useRef so handleBlur always reads the LATEST data, not a stale closure snapshot
+  const dataRef = useRef(data);
 
   // Keep local state in sync if parent data changes (e.g. from refetch)
   useEffect(() => {
     setData(item);
+    dataRef.current = item;
   }, [item]);
 
   const handleChange = (field: keyof ResearchData, value: string) => {
-    setData(prev => ({ ...prev, [field]: value }));
+    const next = { ...dataRef.current, [field]: value };
+    dataRef.current = next;
+    setData(next);
   };
 
   const handleBlur = (field: keyof ResearchData) => {
-    if (data[field] !== item[field]) {
-      handleSync(data);
+    const latest = dataRef.current;
+    if (latest[field] !== item[field]) {
+      handleSync(latest);
     }
   };
 
   const handleSelectChange = (field: keyof ResearchData, value: string) => {
-    const newData = { ...data, [field]: value };
+    const newData = { ...dataRef.current, [field]: value };
+    dataRef.current = newData;
     setData(newData);
     if (newData[field] !== item[field]) {
       handleSync(newData);
