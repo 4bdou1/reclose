@@ -277,7 +277,14 @@ const Research: React.FC = () => {
   });
 
   const handleUpdateRow = async (updatedData: any) => {
-    if (!spreadsheetId || !accessToken || !updatedData._rowIndex) return;
+    if (!spreadsheetId || !accessToken) {
+      toast.error('Google Sheets not connected. Please reconnect your account.');
+      return;
+    }
+    if (!updatedData._rowIndex) {
+      toast.error('Cannot update: row index missing. Try refreshing the page.');
+      return;
+    }
     try {
       const rowData = { ...updatedData };
       delete rowData._rowIndex;
@@ -286,6 +293,7 @@ const Research: React.FC = () => {
       toast.success('Row synced to Google Sheets', {
         style: { background: '#D6B36B', color: '#000', border: 'none' }
       });
+      refetch(); // Keep item fresh so subsequent edits compare against the saved state
     } catch (error: any) {
       toast.error('Failed to sync: ' + error.message);
       refetch(); // Revert to server state on error

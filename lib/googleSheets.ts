@@ -287,7 +287,8 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
 
   // 3. Append the ordered array using the specific column letter so it finds the true bottom of the table
   const appendRange = `${sheetName}!${startColLetter}:${startColLetter}`;
-  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(appendRange)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const encodedAppendRange = `${encodeURIComponent(sheetName)}!${startColLetter}:${startColLetter}`;
+  const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedAppendRange}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   
   const appendRes = await fetch(appendUrl, {
     method: 'POST',
@@ -352,9 +353,9 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   
   // End column letter
   const endColLetter = String.fromCharCode(65 + startColIndex + slicedRow.length - 1);
-  const updateRange = `${sheetName}!${startColLetter}${rowIndex}:${endColLetter}${rowIndex}`;
+  const updateRange = `${encodeURIComponent(sheetName)}!${startColLetter}${rowIndex}:${endColLetter}${rowIndex}`;
 
-  const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(updateRange)}?valueInputOption=USER_ENTERED`;
+  const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${updateRange}?valueInputOption=USER_ENTERED`;
   const updateRes = await fetch(updateUrl, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
