@@ -327,15 +327,21 @@ const Research: React.FC = () => {
 
   // ── Local list state ──────────────────────────────────────────────────────
   // We manage a local copy of the list so successful saves can be applied
-  // optimistically, without triggering a full re-fetch (which would clobber
-  // in-progress edits in other rows).
+  // optimistically, without triggering a full re-fetch.
   const [researchItems, setResearchItems] = useState<(ResearchData & { _rowIndex?: number })[]>([]);
 
-  // Keep local list in sync whenever useSheetsData provides fresh data
-  // (on initial load, or after an explicit error-revert refetch).
+  // GATED sync: only apply fetchedItems → researchItems when we explicitly
+  // requested a refetch (initial load, error revert, new row added).
+  // This prevents the background re-fetches triggered by the 1-second
+  // syncToken interval in GoogleAuthContext from clobbering local edits.
+  const needsRefetchRef = useRef(true); // true = accept the next fetchedItems update
+
   useEffect(() => {
+    if (!needsRefetchRef.current) return; // background refetch — ignore it
+    if (loading) return;                  // still fetching — wait for completion
+    needsRefetchRef.current = false;
     setResearchItems(fetchedItems as (ResearchData & { _rowIndex?: number })[]);
-  }, [fetchedItems]);
+  }, [fetchedItems, loading]);
 
   // Tracks which rows have already shown the "completed" toast (by _rowIndex)
   const completedRowsRef = useRef<Set<number>>(new Set());
@@ -395,7 +401,9 @@ const Research: React.FC = () => {
         );
       } catch (error: any) {
         toast.error('Failed to sync: ' + error.message);
-        // On error, revert to server state so the user sees accurate data
+        // On error, revert to server state — explicitly mark that the next
+        // fetchedItems update should be applied to local state.
+        needsRefetchRef.current = true;
         refetch();
       }
     },
@@ -428,7 +436,10 @@ const Research: React.FC = () => {
       });
       const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
       await logDashboardActivity(ownerName, 'Research Added', 'Created a new blank lead');
-      refetch(); // Pull the newly appended row so it gets its _rowIndex
+      // Pull the newly appended row so it gets its _rowIndex.
+      // Mark that the next fetchedItems update should be applied.
+      needsRefetchRef.current = true;
+      refetch();
     } catch (error: any) {
       toast.error('Failed to add lead: ' + error.message);
     } finally {
