@@ -1,11 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Phone, MessageSquare, Mail, Calendar, Loader2, Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, Phone, MessageSquare, Mail, Loader2, Plus, CheckCircle } from 'lucide-react';
 import { googleSheetsAPI, Research as ResearchData } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { useAuth } from '../context/AuthContext';
 import { logDashboardActivity } from '../lib/supabase';
 import { toast } from 'sonner';
+
+// All 10 fields that count toward "row completeness"
+const REQUIRED_FIELDS: (keyof ResearchData)[] = [
+  'date',
+  'business_name',
+  'category',
+  'city',
+  'contact_method',
+  'time_of_contact',
+  'researched_detail_(30s_note)',
+  'response',
+  'follow-up_due',
+  'follow-up_sent?',
+];
+
+const COMPLETION_THRESHOLD = 0.8; // 80%
+
+const countFilledFields = (row: ResearchData): number =>
+  REQUIRED_FIELDS.filter(f => {
+    const v = row[f];
+    return v !== undefined && v !== null && String(v).trim() !== '';
+  }).length;
 
 const getContactIcon = (method: string) => {
   switch (method?.toLowerCase()) {
@@ -73,13 +95,32 @@ const formatToSheetTime = (inputTime: string) => {
   return `${h}:${mStr} ${ampm}`;
 };
 
-const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: number }, onUpdate: (row: any) => void }) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// EditableRow
+// Props:
+//   item             – the authoritative server snapshot (only updates after
+//                      explicit refetch, NOT after every save)
+//   onUpdate         – async fn that writes to Sheets and returns the saved row
+//   completedRowsRef – shared ref<Set<number>> so the completion toast fires
+//                      only once per row across re-renders
+// ─────────────────────────────────────────────────────────────────────────────
+interface EditableRowProps {
+  item: ResearchData & { _rowIndex?: number };
+  onUpdate: (row: ResearchData & { _rowIndex?: number }) => Promise<void>;
+  completedRowsRef: React.MutableRefObject<Set<number>>;
+}
+
+const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => {
   const [data, setData] = useState(item);
   const [isSyncing, setIsSyncing] = useState(false);
-  // useRef so handleBlur always reads the LATEST data, not a stale closure snapshot
+
+  // Always read the latest data inside async callbacks without stale closures
   const dataRef = useRef(data);
 
-  // Keep local state in sync if parent data changes (e.g. from refetch)
+  // Sync from parent ONLY when the item identity changes (i.e., an explicit
+  // refetch happened — e.g., after an error revert, or on initial load).
+  // We do NOT call refetch after successful saves, so this won't clobber
+  // in-progress edits during normal operation.
   useEffect(() => {
     setData(item);
     dataRef.current = item;
@@ -93,24 +134,41 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
 
   const handleBlur = (field: keyof ResearchData) => {
     const latest = dataRef.current;
+    // Compare against the last-known server value (item[field])
     if (latest[field] !== item[field]) {
-      handleSync(latest);
+      syncToSheets(latest);
     }
   };
 
   const handleSelectChange = (field: keyof ResearchData, value: string) => {
-    const newData = { ...dataRef.current, [field]: value };
-    dataRef.current = newData;
-    setData(newData);
-    if (newData[field] !== item[field]) {
-      handleSync(newData);
+    const next = { ...dataRef.current, [field]: value };
+    dataRef.current = next;
+    setData(next);
+    if (next[field] !== item[field]) {
+      syncToSheets(next);
     }
   };
 
-  const handleSync = async (newData: any) => {
+  const syncToSheets = async (snapshot: ResearchData & { _rowIndex?: number }) => {
     setIsSyncing(true);
     try {
-      await onUpdate(newData);
+      await onUpdate(snapshot);
+
+      // ── Smart completion notification ────────────────────────────────────
+      // Fire once per row when ≥80% of the required fields are filled.
+      const rowIdx = snapshot._rowIndex ?? -1;
+      if (rowIdx > 0 && !completedRowsRef.current.has(rowIdx)) {
+        const filled = countFilledFields(snapshot);
+        const ratio = filled / REQUIRED_FIELDS.length;
+        if (ratio >= COMPLETION_THRESHOLD) {
+          completedRowsRef.current.add(rowIdx);
+          toast.success('Lead fully researched ✓', {
+            description: `${snapshot.business_name || 'This lead'} is ${Math.round(ratio * 100)}% complete.`,
+            icon: <CheckCircle className="w-4 h-4 text-green-600" />,
+            duration: 4000,
+          });
+        }
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -120,10 +178,14 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
     <tr className="hover:bg-gray-50/50 transition-colors group relative">
       {/* Date */}
       <td className="p-2 border-b border-gray-100 relative">
-        {isSyncing && <div className="absolute top-2 left-2"><Loader2 className="w-3 h-3 animate-spin text-gray-400" /></div>}
-        <input 
-          type="date" 
-          value={parseToInputDate(data.date)} 
+        {isSyncing && (
+          <div className="absolute top-2 left-2 z-10">
+            <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+          </div>
+        )}
+        <input
+          type="date"
+          value={parseToInputDate(data.date)}
           onChange={e => handleChange('date', formatToSheetDate(e.target.value))}
           onBlur={() => handleBlur('date')}
           className="w-full bg-transparent text-xs text-gray-500 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -131,10 +193,10 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Business Name */}
       <td className="p-2 border-b border-gray-100">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Business Name"
-          value={data.business_name || ''} 
+          value={data.business_name || ''}
           onChange={e => handleChange('business_name', e.target.value)}
           onBlur={() => handleBlur('business_name')}
           className="w-full bg-transparent font-semibold text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -142,10 +204,10 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Category */}
       <td className="p-2 border-b border-gray-100">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Category"
-          value={data.category || ''} 
+          value={data.category || ''}
           onChange={e => handleChange('category', e.target.value)}
           onBlur={() => handleBlur('category')}
           className="w-full bg-transparent text-[10px] uppercase tracking-wider text-gray-500 font-bold focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -153,10 +215,10 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* City */}
       <td className="p-2 border-b border-gray-100">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="City"
-          value={data.city || ''} 
+          value={data.city || ''}
           onChange={e => handleChange('city', e.target.value)}
           onBlur={() => handleBlur('city')}
           className="w-full bg-transparent text-sm text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -164,7 +226,7 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Contact Method */}
       <td className="p-2 border-b border-gray-100">
-        <select 
+        <select
           value={data.contact_method || ''}
           onChange={e => handleSelectChange('contact_method', e.target.value)}
           className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1 py-1 outline-none cursor-pointer"
@@ -177,9 +239,9 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Time of Contact */}
       <td className="p-2 border-b border-gray-100">
-        <input 
-          type="time" 
-          value={parseToInputTime(data.time_of_contact)} 
+        <input
+          type="time"
+          value={parseToInputTime(data.time_of_contact)}
           onChange={e => handleChange('time_of_contact', formatToSheetTime(e.target.value))}
           onBlur={() => handleBlur('time_of_contact')}
           className="w-full bg-transparent text-xs text-gray-500 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -187,10 +249,10 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* 30s Note */}
       <td className="p-2 border-b border-gray-100">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Researched detail..."
-          value={data['researched_detail_(30s_note)'] || ''} 
+          value={data['researched_detail_(30s_note)'] || ''}
           onChange={e => handleChange('researched_detail_(30s_note)', e.target.value)}
           onBlur={() => handleBlur('researched_detail_(30s_note)')}
           className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -198,11 +260,13 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Response */}
       <td className="p-2 border-b border-gray-100">
-        <select 
+        <select
           value={data.response || ''}
           onChange={e => handleSelectChange('response', e.target.value)}
           className={`w-full text-[10px] font-bold uppercase tracking-wider rounded px-1 py-1 outline-none cursor-pointer ${
-            data.response ? getResponseBadge(data.response) : 'bg-transparent text-gray-500 hover:bg-gray-50 focus:bg-white focus:ring-1 focus:ring-black'
+            data.response
+              ? getResponseBadge(data.response)
+              : 'bg-transparent text-gray-500 hover:bg-gray-50 focus:bg-white focus:ring-1 focus:ring-black'
           }`}
         >
           <option value="">No Status</option>
@@ -214,9 +278,9 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Follow-Up Due */}
       <td className="p-2 border-b border-gray-100">
-        <input 
-          type="date" 
-          value={parseToInputDate(data['follow-up_due'])} 
+        <input
+          type="date"
+          value={parseToInputDate(data['follow-up_due'])}
           onChange={e => handleChange('follow-up_due', formatToSheetDate(e.target.value))}
           onBlur={() => handleBlur('follow-up_due')}
           className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -224,7 +288,7 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Follow-Up Sent? */}
       <td className="p-2 border-b border-gray-100">
-        <select 
+        <select
           value={data['follow-up_sent?'] || ''}
           onChange={e => handleSelectChange('follow-up_sent?', e.target.value)}
           className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1 py-1 outline-none cursor-pointer"
@@ -236,10 +300,10 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
       </td>
       {/* Outcome / Notes */}
       <td className="p-2 border-b border-gray-100">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Outcome notes..."
-          value={data['outcome_/_notes'] || ''} 
+          value={data['outcome_/_notes'] || ''}
           onChange={e => handleChange('outcome_/_notes', e.target.value)}
           onBlur={() => handleBlur('outcome_/_notes')}
           className="w-full bg-transparent text-xs text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-2 py-1 outline-none"
@@ -249,63 +313,102 @@ const EditableRow = ({ item, onUpdate }: { item: ResearchData & { _rowIndex?: nu
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Research Page
+// ─────────────────────────────────────────────────────────────────────────────
 const Research: React.FC = () => {
-  const { data: researchItems, loading, refetch } = useSheetsData(googleSheetsAPI.getResearch);
+  const { data: fetchedItems, loading, refetch } = useSheetsData(googleSheetsAPI.getResearch);
   const { spreadsheetId, accessToken } = useGoogleAuth();
   const { user } = useAuth();
-  
+
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
-  // Extract unique categories for the tabs
-  const uniqueCategories = Array.from(new Set(researchItems.map(r => r.category).filter(Boolean)));
+  // ── Local list state ──────────────────────────────────────────────────────
+  // We manage a local copy of the list so successful saves can be applied
+  // optimistically, without triggering a full re-fetch (which would clobber
+  // in-progress edits in other rows).
+  const [researchItems, setResearchItems] = useState<(ResearchData & { _rowIndex?: number })[]>([]);
+
+  // Keep local list in sync whenever useSheetsData provides fresh data
+  // (on initial load, or after an explicit error-revert refetch).
+  useEffect(() => {
+    setResearchItems(fetchedItems as (ResearchData & { _rowIndex?: number })[]);
+  }, [fetchedItems]);
+
+  // Tracks which rows have already shown the "completed" toast (by _rowIndex)
+  const completedRowsRef = useRef<Set<number>>(new Set());
+
+  // ── Derived data ──────────────────────────────────────────────────────────
+  const uniqueCategories = Array.from(
+    new Set(researchItems.map(r => r.category).filter(Boolean))
+  );
   const categories = ['All', ...uniqueCategories];
 
   const filteredItems = researchItems.filter(item => {
-    const matchesTab = activeTab === 'All' || item.category?.toLowerCase() === activeTab.toLowerCase();
-    
+    const matchesTab =
+      activeTab === 'All' || item.category?.toLowerCase() === activeTab.toLowerCase();
+
     const searchLower = searchTerm.toLowerCase();
     const businessMatch = item.business_name?.toLowerCase()?.includes(searchLower) ?? false;
     const cityMatch = item.city?.toLowerCase()?.includes(searchLower) ?? false;
     const matchesSearch = searchTerm === '' || businessMatch || cityMatch;
-    
-    // Check if the row has any meaningful data to filter out empty rows from bottom of spreadsheet
+
+    // Filter out fully-empty rows at the bottom of the spreadsheet
     const isNotEmpty = !!(item.business_name || item.date || item.city || item.contact_method);
 
     return matchesTab && matchesSearch && isNotEmpty;
   });
 
-  const handleUpdateRow = async (updatedData: any) => {
-    if (!spreadsheetId || !accessToken) {
-      toast.error('Google Sheets not connected. Please reconnect your account.');
-      return;
-    }
-    if (!updatedData._rowIndex) {
-      toast.error('Cannot update: row index missing. Try refreshing the page.');
-      return;
-    }
-    try {
-      const rowData = { ...updatedData };
-      delete rowData._rowIndex;
-      
-      await googleSheetsAPI.updateResearch(updatedData._rowIndex, rowData, spreadsheetId, accessToken);
-      toast.success('Row synced to Google Sheets', {
-        style: { background: '#D6B36B', color: '#000', border: 'none' }
-      });
-      refetch(); // Keep item fresh so subsequent edits compare against the saved state
-    } catch (error: any) {
-      toast.error('Failed to sync: ' + error.message);
-      refetch(); // Revert to server state on error
-    }
-  };
+  // ── Update handler ────────────────────────────────────────────────────────
+  const handleUpdateRow = useCallback(
+    async (updatedData: ResearchData & { _rowIndex?: number }) => {
+      if (!spreadsheetId || !accessToken) {
+        toast.error('Google Sheets not connected. Please reconnect your account.');
+        return;
+      }
+      if (!updatedData._rowIndex) {
+        toast.error('Cannot update: row index missing. Try refreshing the page.');
+        return;
+      }
 
+      try {
+        const rowData = { ...updatedData };
+        delete rowData._rowIndex;
+
+        await googleSheetsAPI.updateResearch(
+          updatedData._rowIndex,
+          rowData,
+          spreadsheetId,
+          accessToken
+        );
+
+        // ── Optimistic local update ────────────────────────────────────────
+        // Replace the matching row in local state so the parent list reflects
+        // the saved data. This avoids a full refetch that would reset every
+        // row's in-progress edits.
+        setResearchItems(prev =>
+          prev.map(item =>
+            item._rowIndex === updatedData._rowIndex ? { ...updatedData } : item
+          )
+        );
+      } catch (error: any) {
+        toast.error('Failed to sync: ' + error.message);
+        // On error, revert to server state so the user sees accurate data
+        refetch();
+      }
+    },
+    [spreadsheetId, accessToken, refetch]
+  );
+
+  // ── Add new lead ──────────────────────────────────────────────────────────
   const handleAddLead = async () => {
     if (!spreadsheetId || !accessToken) return;
     setIsAdding(true);
-    
-    const newLead = {
-      date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY natively
+
+    const newLead: ResearchData = {
+      date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY
       business_name: '',
       category: '',
       city: '',
@@ -315,17 +418,17 @@ const Research: React.FC = () => {
       response: '',
       'follow-up_due': '',
       'follow-up_sent?': '',
-      'outcome_/_notes': ''
+      'outcome_/_notes': '',
     };
 
     try {
       await googleSheetsAPI.addResearch(newLead, spreadsheetId, accessToken);
-      toast.success('New lead created in Google Sheets', {
-        style: { background: '#D6B36B', color: '#000', border: 'none' }
+      toast.success('New lead created', {
+        style: { background: '#D6B36B', color: '#000', border: 'none' },
       });
       const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
       await logDashboardActivity(ownerName, 'Research Added', 'Created a new blank lead');
-      refetch(); // Pull the newly added row
+      refetch(); // Pull the newly appended row so it gets its _rowIndex
     } catch (error: any) {
       toast.error('Failed to add lead: ' + error.message);
     } finally {
@@ -343,11 +446,11 @@ const Research: React.FC = () => {
 
         <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search business or city..." 
+          <input
+            type="text"
+            placeholder="Search business or city..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
           />
         </div>
@@ -355,13 +458,13 @@ const Research: React.FC = () => {
 
       {categories.length > 1 && (
         <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-2">
-          {categories.map((cat) => (
+          {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setActiveTab(cat)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === cat 
-                  ? 'bg-[#050505] text-white' 
+                activeTab === cat
+                  ? 'bg-[#050505] text-white'
                   : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-black'
               }`}
             >
@@ -393,15 +496,18 @@ const Research: React.FC = () => {
             </thead>
             <tbody>
               {filteredItems.map((item, idx) => (
-                <EditableRow 
-                  key={idx} 
-                  item={item} 
-                  onUpdate={handleUpdateRow} 
+                <EditableRow
+                  // Use stable _rowIndex so row identity is preserved after
+                  // optimistic updates; fall back to array idx only if missing.
+                  key={item._rowIndex ?? idx}
+                  item={item}
+                  onUpdate={handleUpdateRow}
+                  completedRowsRef={completedRowsRef}
                 />
               ))}
             </tbody>
           </table>
-          
+
           <div className="p-4 border-t border-gray-100 bg-gray-50">
             <button
               onClick={handleAddLead}
