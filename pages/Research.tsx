@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { logDashboardActivity } from '../lib/supabase';
 import { toast } from 'sonner';
 
+type ResearchRow = ResearchData & { _rowIndex?: number };
+
 // All 10 fields that count toward "row completeness"
 const REQUIRED_FIELDS: (keyof ResearchData)[] = [
   'date',
@@ -22,12 +24,52 @@ const REQUIRED_FIELDS: (keyof ResearchData)[] = [
 ];
 
 const COMPLETION_THRESHOLD = 0.8; // 80%
+const RESEARCH_REFRESH_INTERVAL_MS = 5000;
 
 const countFilledFields = (row: ResearchData): number =>
   REQUIRED_FIELDS.filter(f => {
     const v = row[f];
     return v !== undefined && v !== null && String(v).trim() !== '';
   }).length;
+
+const rowHasUnsavedChanges = (current: ResearchRow, saved: ResearchRow) =>
+  (Object.keys(current) as (keyof ResearchRow)[]).some(
+    key => key !== '_rowIndex' && current[key] !== saved[key]
+  );
+
+const mergeIncomingResearchRows = (
+  currentRows: ResearchRow[],
+  fetchedRows: ResearchRow[],
+  dirtyRows: Set<number>
+): ResearchRow[] => {
+  const currentByRowIndex = new Map(
+    currentRows
+      .filter(row => row._rowIndex !== undefined)
+      .map(row => [row._rowIndex as number, row])
+  );
+  const fetchedRowIndexes = new Set(
+    fetchedRows
+      .filter(row => row._rowIndex !== undefined)
+      .map(row => row._rowIndex as number)
+  );
+
+  const mergedRows = fetchedRows.map(row => {
+    const rowIndex = row._rowIndex;
+    if (rowIndex !== undefined && dirtyRows.has(rowIndex)) {
+      return currentByRowIndex.get(rowIndex) ?? row;
+    }
+    return row;
+  });
+
+  currentRows.forEach(row => {
+    const rowIndex = row._rowIndex;
+    if (rowIndex !== undefined && dirtyRows.has(rowIndex) && !fetchedRowIndexes.has(rowIndex)) {
+      mergedRows.push(row);
+    }
+  });
+
+  return mergedRows;
+};
 
 const getContactIcon = (method: string) => {
   switch (method?.toLowerCase()) {
@@ -128,12 +170,13 @@ const formatToSheetTime = (inputTime: string) => {
 //                      only once per row across re-renders
 // ─────────────────────────────────────────────────────────────────────────────
 interface EditableRowProps {
-  item: ResearchData & { _rowIndex?: number };
-  onUpdate: (row: ResearchData & { _rowIndex?: number }) => Promise<void>;
+  item: ResearchRow;
+  onUpdate: (row: ResearchRow) => Promise<boolean>;
+  onDirtyChange: (rowIndex: number | undefined, isDirty: boolean) => void;
   completedRowsRef: React.MutableRefObject<Set<number>>;
 }
 
-const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => {
+const EditableRow = ({ item, onUpdate, onDirtyChange, completedRowsRef }: EditableRowProps) => {
   const [data, setData] = useState(item);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -150,7 +193,8 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
     setData(item);
     dataRef.current = item;
     lastSavedRef.current = item;
-  }, [item]);
+    onDirtyChange(item._rowIndex, false);
+  }, [item, onDirtyChange]);
 
   // ── Flush Save Function ───────────────────────────────────────────────────
   const flushSave = () => {
@@ -160,9 +204,7 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
     }
     const saved = lastSavedRef.current;
     const next = dataRef.current;
-    const hasChanges = (Object.keys(next) as (keyof typeof next)[]).some(
-      k => k !== '_rowIndex' && next[k] !== saved[k]
-    );
+    const hasChanges = rowHasUnsavedChanges(next, saved);
     // Use the syncToSheets function defined below
     if (hasChanges) syncToSheets(next);
   };
@@ -189,8 +231,10 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
   const syncToSheets = async (snapshot: ResearchData & { _rowIndex?: number }) => {
     setIsSyncing(true);
     try {
-      await onUpdate(snapshot);
+      const didSave = await onUpdate(snapshot);
+      if (!didSave) return;
       lastSavedRef.current = snapshot; // mark as saved
+      onDirtyChange(snapshot._rowIndex, false);
 
       // Smart completion notification (≥80% fields filled, once per row)
       const rowIdx = snapshot._rowIndex ?? -1;
@@ -219,9 +263,7 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
       const saved = lastSavedRef.current;
-      const hasChanges = (Object.keys(next) as (keyof typeof next)[]).some(
-        k => k !== '_rowIndex' && next[k] !== saved[k]
-      );
+      const hasChanges = rowHasUnsavedChanges(next, saved);
       if (hasChanges) syncToSheets(next);
     }, 800);
   };
@@ -231,6 +273,7 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
     const next = { ...dataRef.current, [field]: value };
     dataRef.current = next;
     setData(next);
+    onDirtyChange(next._rowIndex, rowHasUnsavedChanges(next, lastSavedRef.current));
     scheduleSave(next); // auto-save 800ms after last change
   };
 
@@ -250,6 +293,7 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
     const next = { ...dataRef.current, [field]: value };
     dataRef.current = next;
     setData(next);
+    onDirtyChange(next._rowIndex, rowHasUnsavedChanges(next, lastSavedRef.current));
     // Selects save immediately (no need to debounce a single-click action)
     if (next[field] !== lastSavedRef.current[field]) {
       syncToSheets(next);
@@ -412,7 +456,7 @@ const Research: React.FC = () => {
   // ── Local list state ──────────────────────────────────────────────────────
   // We manage a local copy of the list so successful saves can be applied
   // optimistically, without triggering a full re-fetch.
-  const [researchItems, setResearchItems] = useState<(ResearchData & { _rowIndex?: number })[]>([]);
+  const [researchItems, setResearchItems] = useState<ResearchRow[]>([]);
 
   // GATED sync: only apply fetchedItems → researchItems when we explicitly
   // requested a refetch (initial load, error revert, new row added).
@@ -424,16 +468,68 @@ const Research: React.FC = () => {
     if (!needsRefetchRef.current) return; // background refetch — ignore it
     if (loading) return;                  // still fetching — wait for completion
     needsRefetchRef.current = false;
-    setResearchItems(fetchedItems as (ResearchData & { _rowIndex?: number })[]);
+    setResearchItems(currentItems => {
+      const mergedItems = mergeIncomingResearchRows(
+        currentItems,
+        fetchedItems as ResearchRow[],
+        dirtyRowsRef.current
+      );
+      setCache('Research', mergedItems);
+      return mergedItems;
+    });
   }, [fetchedItems, loading]);
 
   // Tracks which rows have already shown the "completed" toast (by _rowIndex)
   const completedRowsRef = useRef<Set<number>>(new Set());
+  const dirtyRowsRef = useRef<Set<number>>(new Set());
 
   // Always-current pointer to the list — used inside handleUpdateRow without
   // stale closure issues (the callback dep array stays stable).
   const researchItemsRef = useRef(researchItems);
   useEffect(() => { researchItemsRef.current = researchItems; }, [researchItems]);
+
+  const handleDirtyChange = useCallback((rowIndex: number | undefined, isDirty: boolean) => {
+    if (rowIndex === undefined) return;
+    if (isDirty) {
+      dirtyRowsRef.current.add(rowIndex);
+      return;
+    }
+    dirtyRowsRef.current.delete(rowIndex);
+  }, []);
+
+  useEffect(() => {
+    if (!spreadsheetId || !accessToken) return;
+
+    const refreshFromSheets = () => {
+      invalidateCache('Research');
+      needsRefetchRef.current = true;
+      refetch();
+    };
+
+    const handleWindowFocus = () => {
+      refreshFromSheets();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshFromSheets();
+      }
+    };
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      refreshFromSheets();
+    }, RESEARCH_REFRESH_INTERVAL_MS);
+
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [spreadsheetId, accessToken, refetch]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const uniqueCategories = Array.from(
@@ -458,14 +554,14 @@ const Research: React.FC = () => {
 
   // ── Update handler ────────────────────────────────────────────────────────
   const handleUpdateRow = useCallback(
-    async (updatedData: ResearchData & { _rowIndex?: number }) => {
+    async (updatedData: ResearchRow) => {
       if (!spreadsheetId || !accessToken) {
         toast.error('Google Sheets not connected. Please reconnect your account.');
-        return;
+        return false;
       }
       if (!updatedData._rowIndex) {
         toast.error('Cannot update: row index missing. Try refreshing the page.');
-        return;
+        return false;
       }
 
       // ── Optimistic update (local state + cache) ───────────────────────────
@@ -495,12 +591,14 @@ const Research: React.FC = () => {
         // would wipe our optimistic cache. Re-apply it so navigate-back still
         // reads our updated data and not a stale server response.
         setCache('Research', updatedList);
+        return true;
       } catch (error: any) {
         toast.error('Failed to sync: ' + error.message);
         // Clear the optimistic cache and revert to server state.
         invalidateCache('Research');
         needsRefetchRef.current = true;
-        refetch();
+        await refetch();
+        return false;
       }
     },
     [spreadsheetId, accessToken, refetch]
@@ -615,6 +713,7 @@ const Research: React.FC = () => {
                   key={item._rowIndex ?? idx}
                   item={item}
                   onUpdate={handleUpdateRow}
+                  onDirtyChange={handleDirtyChange}
                   completedRowsRef={completedRowsRef}
                 />
               ))}
