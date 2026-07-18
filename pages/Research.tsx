@@ -4,10 +4,17 @@ import { googleSheetsAPI, Research as ResearchData, setCache, invalidateCache } 
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { useAuth } from '../context/AuthContext';
-import { logDashboardActivity } from '../lib/supabase';
+import { logDashboardActivity, supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
 type ResearchRow = ResearchData & { _rowIndex?: number };
+type ResearchSyncPayload = {
+  spreadsheetId: string;
+  clientId: string;
+  rowIndex?: number;
+  reason: 'row-updated' | 'row-added';
+  updatedAt: string;
+};
 
 // All 10 fields that count toward "row completeness"
 const REQUIRED_FIELDS: (keyof ResearchData)[] = [
@@ -24,7 +31,7 @@ const REQUIRED_FIELDS: (keyof ResearchData)[] = [
 ];
 
 const COMPLETION_THRESHOLD = 0.8; // 80%
-const RESEARCH_REFRESH_INTERVAL_MS = 5000;
+const RESEARCH_SYNC_EVENT = 'research-sync';
 
 const countFilledFields = (row: ResearchData): number =>
   REQUIRED_FIELDS.filter(f => {
@@ -482,6 +489,14 @@ const Research: React.FC = () => {
   // Tracks which rows have already shown the "completed" toast (by _rowIndex)
   const completedRowsRef = useRef<Set<number>>(new Set());
   const dirtyRowsRef = useRef<Set<number>>(new Set());
+  const refreshInFlightRef = useRef(false);
+  const queuedRefreshRef = useRef(false);
+  const researchChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const clientIdRef = useRef(
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `research-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
 
   // Always-current pointer to the list — used inside handleUpdateRow without
   // stale closure issues (the callback dep array stays stable).
@@ -497,39 +512,97 @@ const Research: React.FC = () => {
     dirtyRowsRef.current.delete(rowIndex);
   }, []);
 
+  const requestResearchRefresh = useCallback(async () => {
+    if (refreshInFlightRef.current) {
+      queuedRefreshRef.current = true;
+      return;
+    }
+
+    refreshInFlightRef.current = true;
+    try {
+      do {
+        queuedRefreshRef.current = false;
+        invalidateCache('Research');
+        needsRefetchRef.current = true;
+        await refetch();
+      } while (queuedRefreshRef.current);
+    } finally {
+      refreshInFlightRef.current = false;
+    }
+  }, [refetch]);
+
+  const publishResearchSync = useCallback(
+    async (reason: ResearchSyncPayload['reason'], rowIndex?: number) => {
+      if (!spreadsheetId) return;
+
+      const channel = researchChannelRef.current;
+      if (!channel) return;
+
+      const result = await channel.send({
+        type: 'broadcast',
+        event: RESEARCH_SYNC_EVENT,
+        payload: {
+          spreadsheetId,
+          clientId: clientIdRef.current,
+          rowIndex,
+          reason,
+          updatedAt: new Date().toISOString(),
+        } satisfies ResearchSyncPayload,
+      });
+
+      if (result !== 'ok') {
+        console.error('Failed to broadcast research sync event:', result);
+      }
+    },
+    [spreadsheetId]
+  );
+
+  useEffect(() => {
+    if (!spreadsheetId) return;
+
+    const channel = supabase.channel(`research-sync:${spreadsheetId}`, {
+      config: { broadcast: { ack: true, self: false } },
+    });
+
+    researchChannelRef.current = channel;
+
+    channel
+      .on<ResearchSyncPayload>('broadcast', { event: RESEARCH_SYNC_EVENT }, ({ payload }) => {
+        if (!payload || payload.spreadsheetId !== spreadsheetId) return;
+        if (payload.clientId === clientIdRef.current) return;
+        void requestResearchRefresh();
+      })
+      .subscribe();
+
+    return () => {
+      if (researchChannelRef.current === channel) {
+        researchChannelRef.current = null;
+      }
+      void supabase.removeChannel(channel);
+    };
+  }, [spreadsheetId, requestResearchRefresh]);
+
   useEffect(() => {
     if (!spreadsheetId || !accessToken) return;
 
-    const refreshFromSheets = () => {
-      invalidateCache('Research');
-      needsRefetchRef.current = true;
-      refetch();
-    };
-
     const handleWindowFocus = () => {
-      refreshFromSheets();
+      void requestResearchRefresh();
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refreshFromSheets();
+        void requestResearchRefresh();
       }
     };
-
-    const interval = window.setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      refreshFromSheets();
-    }, RESEARCH_REFRESH_INTERVAL_MS);
 
     window.addEventListener('focus', handleWindowFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.clearInterval(interval);
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [spreadsheetId, accessToken, refetch]);
+  }, [spreadsheetId, accessToken, requestResearchRefresh]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const uniqueCategories = Array.from(
@@ -591,17 +664,16 @@ const Research: React.FC = () => {
         // would wipe our optimistic cache. Re-apply it so navigate-back still
         // reads our updated data and not a stale server response.
         setCache('Research', updatedList);
+        await publishResearchSync('row-updated', updatedData._rowIndex);
         return true;
       } catch (error: any) {
         toast.error('Failed to sync: ' + error.message);
         // Clear the optimistic cache and revert to server state.
-        invalidateCache('Research');
-        needsRefetchRef.current = true;
-        await refetch();
+        await requestResearchRefresh();
         return false;
       }
     },
-    [spreadsheetId, accessToken, refetch]
+    [spreadsheetId, accessToken, publishResearchSync, requestResearchRefresh]
   );
 
 
@@ -636,10 +708,8 @@ const Research: React.FC = () => {
       });
       const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
       await logDashboardActivity(ownerName, 'Research Added', 'Created a new blank lead');
-      // Pull the newly appended row so it gets its _rowIndex.
-      // Mark that the next fetchedItems update should be applied.
-      needsRefetchRef.current = true;
-      refetch();
+      await requestResearchRefresh();
+      await publishResearchSync('row-added');
     } catch (error: any) {
       toast.error('Failed to add lead: ' + error.message);
     } finally {
