@@ -99,6 +99,26 @@ const getResponseBadge = (response: string) => {
 
 const parseToInputDate = (sheetDate: string) => {
   if (!sheetDate) return '';
+
+  const buildInputDate = (year: string, month: string, day: string) => {
+    const numericYear = Number(year);
+    const numericMonth = Number(month);
+    const numericDay = Number(day);
+
+    if (
+      !Number.isInteger(numericYear) ||
+      !Number.isInteger(numericMonth) ||
+      !Number.isInteger(numericDay) ||
+      numericMonth < 1 ||
+      numericMonth > 12 ||
+      numericDay < 1 ||
+      numericDay > 31
+    ) {
+      return null;
+    }
+
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
   
   // Already in YYYY-MM-DD format
   if (sheetDate.includes('-')) {
@@ -112,11 +132,18 @@ const parseToInputDate = (sheetDate: string) => {
   if (parts.length === 3) {
     // If first part is a year (e.g., 2026/07/17) -> YYYY/MM/DD
     if (parts[0].length === 4) {
-      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      const isoDate = buildInputDate(parts[0], parts[1], parts[2]);
+      if (isoDate) return isoDate;
     }
-    // If last part is a year (e.g., 17/07/2026) -> legacy DD/MM/YYYY
+
+    // If last part is a year, support both DD/MM/YYYY and MM/DD/YYYY.
     if (parts[2].length === 4) {
-      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      const dmyDate = buildInputDate(parts[2], parts[1], parts[0]);
+      const mdyDate = buildInputDate(parts[2], parts[0], parts[1]);
+
+      if (dmyDate && !mdyDate) return dmyDate;
+      if (mdyDate && !dmyDate) return mdyDate;
+      if (dmyDate) return dmyDate;
     }
   }
 
