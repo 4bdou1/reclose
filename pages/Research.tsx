@@ -638,18 +638,20 @@ const Research: React.FC = () => {
 
       normalizationInFlightRef.current = true;
       try {
-        for (const { row, normalizedFields } of rowsToNormalize) {
-          const updatedRow = { ...row, ...normalizedFields };
-          const rowData = { ...updatedRow };
-          delete rowData._rowIndex;
+        await googleSheetsAPI.batchUpdateResearch(
+          rowsToNormalize.map(({ row, normalizedFields }) => {
+            const updatedRow = { ...row, ...normalizedFields };
+            const rowData = { ...updatedRow };
+            delete rowData._rowIndex;
 
-          await googleSheetsAPI.updateResearch(
-            row._rowIndex,
-            rowData,
-            spreadsheetId,
-            accessToken
-          );
-        }
+            return {
+              rowIndex: row._rowIndex,
+              rowData,
+            };
+          }),
+          spreadsheetId,
+          accessToken
+        );
 
         await requestResearchRefresh();
         await publishResearchSync('row-updated');

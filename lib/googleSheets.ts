@@ -74,6 +74,11 @@ export interface AnalyticsData {
   byTimeSlot: { timeSlot: string; total: string; yes: string; noAnswer: string; responseRate: string }[];
 }
 
+type SheetRowUpdate = {
+  rowIndex: number;
+  rowData: Record<string, any>;
+};
+
 /**
  * Parses a 2D array from Google Sheets API into an array of objects based on the header row.
  */
@@ -119,6 +124,41 @@ export const setCache = (sheetName: string, data: any[]) => {
 };
 
 export const sheetHeaders: Record<string, string[]> = {};
+
+const normalizeHeaderKey = (header: string) => header.toLowerCase().trim().replace(/ /g, '_');
+
+const columnIndexToLetter = (index: number) => {
+  let columnIndex = index;
+  let result = '';
+
+  while (columnIndex >= 0) {
+    result = String.fromCharCode((columnIndex % 26) + 65) + result;
+    columnIndex = Math.floor(columnIndex / 26) - 1;
+  }
+
+  return result;
+};
+
+async function getSheetHeaders(
+  sheetName: string,
+  spreadsheetId: string,
+  accessToken: string,
+  headerRowIndex: number
+): Promise<string[]> {
+  let headers: string[] = sheetHeaders[sheetName] || [];
+
+  if (headers.length > 0) return headers;
+
+  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}`;
+  const headerResponse = await fetch(headerUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+
+  if (!headerResponse.ok) throw new Error(`Failed to fetch headers: ${await headerResponse.text()}`);
+
+  const headerData = await headerResponse.json();
+  headers = (headerData.values && headerData.values[0]) ? headerData.values[0] : [];
+  sheetHeaders[sheetName] = headers;
+  return headers;
+}
 
 /**
  * Fetch a specific sheet tab using the Google Sheets API v4.
@@ -333,18 +373,7 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
 
   // Fetch headers to map the row correctly
-  let headers: string[] = sheetHeaders[sheetName] || [];
-  
-  if (headers.length === 0) {
-    const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}`;
-    const headerResponse = await fetch(headerUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
-    
-    if (!headerResponse.ok) throw new Error(`Failed to fetch headers: ${await headerResponse.text()}`);
-    
-    const headerData = await headerResponse.json();
-    headers = (headerData.values && headerData.values[0]) ? headerData.values[0] : [];
-    sheetHeaders[sheetName] = headers;
-  }
+  let headers: string[] = await getSheetHeaders(sheetName, spreadsheetId, accessToken, headerRowIndex);
 
   if (headers.length === 0) throw new Error(`No headers found in sheet ${sheetName}.`);
 
@@ -363,19 +392,19 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   // Find where headers start
   let startColIndex = 0;
   while (startColIndex < headers.length && !headers[startColIndex].trim()) startColIndex++;
-  const startColLetter = String.fromCharCode(65 + startColIndex);
+  const startColLetter = columnIndexToLetter(startColIndex);
 
   // Map to array
   const orderedRow = headers.map(header => {
     if (!header.trim()) return '';
-    const key = header.toLowerCase().trim().replace(/ /g, '_');
+    const key = normalizeHeaderKey(header);
     return rowData[key] !== undefined ? rowData[key] : '';
   });
 
   const slicedRow = orderedRow.slice(startColIndex);
   
   // End column letter
-  const endColLetter = String.fromCharCode(65 + startColIndex + slicedRow.length - 1);
+  const endColLetter = columnIndexToLetter(startColIndex + slicedRow.length - 1);
   const updateRange = `${encodeURIComponent(sheetName)}!${startColLetter}${rowIndex}:${endColLetter}${rowIndex}`;
 
   const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${updateRange}?valueInputOption=USER_ENTERED`;
@@ -391,6 +420,59 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
 
   if (!updateRes.ok) throw new Error(`Failed to update row in ${sheetName}: ${await updateRes.text()}`);
   
+  invalidateCache(sheetName);
+  return true;
+}
+
+/**
+ * Update multiple rows in one Google Sheets API write request.
+ */
+export async function batchUpdateRows(
+  sheetName: string,
+  updates: SheetRowUpdate[],
+  spreadsheetId: string,
+  accessToken: string,
+  headerRowIndex: number = 0
+): Promise<boolean> {
+  if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
+  if (updates.length === 0) return true;
+
+  const headers = await getSheetHeaders(sheetName, spreadsheetId, accessToken, headerRowIndex);
+  if (headers.length === 0) throw new Error(`No headers found in sheet ${sheetName}.`);
+
+  let startColIndex = 0;
+  while (startColIndex < headers.length && !headers[startColIndex].trim()) startColIndex++;
+
+  const startColLetter = columnIndexToLetter(startColIndex);
+  const data = updates.map(({ rowIndex, rowData }) => {
+    const orderedRow = headers.map(header => {
+      if (!header.trim()) return '';
+      const key = normalizeHeaderKey(header);
+      return rowData[key] !== undefined ? rowData[key] : '';
+    });
+
+    const slicedRow = orderedRow.slice(startColIndex);
+    const endColLetter = columnIndexToLetter(startColIndex + slicedRow.length - 1);
+
+    return {
+      range: `${sheetName}!${startColLetter}${rowIndex}:${endColLetter}${rowIndex}`,
+      majorDimension: 'ROWS',
+      values: [slicedRow],
+    };
+  });
+
+  const batchUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
+  const response = await fetch(batchUpdateUrl, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      valueInputOption: 'USER_ENTERED',
+      data,
+    }),
+  });
+
+  if (!response.ok) throw new Error(`Failed to batch update rows in ${sheetName}: ${await response.text()}`);
+
   invalidateCache(sheetName);
   return true;
 }
@@ -454,5 +536,6 @@ export const googleSheetsAPI = {
   addTeamMember: (data: Record<string, any>, id: string, token: string) => appendRow('Team', data, id, token),
   updateTask: (rowIndex: number, taskObj: Record<string, any>, id: string, token: string) => updateRow('Tasks', rowIndex, taskObj, id, token),
   updateResearch: (rowIndex: number, data: Record<string, any>, id: string, token: string) => updateRow('Research', rowIndex, data, id, token, 3),
+  batchUpdateResearch: (updates: SheetRowUpdate[], id: string, token: string) => batchUpdateRows('Research', updates, id, token, 3),
   deleteTask: (rowIndex: number, id: string, token: string) => deleteRow('Tasks', rowIndex, id, token),
 };
