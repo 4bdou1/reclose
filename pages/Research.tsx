@@ -129,9 +129,37 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
     lastSavedRef.current = item;
   }, [item]);
 
-  // Cleanup debounce timer on unmount
-  useEffect(() => () => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  // ── Flush Save Function ───────────────────────────────────────────────────
+  const flushSave = () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const saved = lastSavedRef.current;
+    const next = dataRef.current;
+    const hasChanges = (Object.keys(next) as (keyof typeof next)[]).some(
+      k => k !== '_rowIndex' && next[k] !== saved[k]
+    );
+    // Use the syncToSheets function defined below
+    if (hasChanges) syncToSheets(next);
+  };
+
+  // Flush saves on unmount (e.g., navigating away)
+  useEffect(() => {
+    return () => {
+      flushSave();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Flush saves on visibility change (e.g., closing tab, app backgrounded)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushSave();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Core save function ────────────────────────────────────────────────────
