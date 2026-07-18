@@ -50,13 +50,36 @@ const getResponseBadge = (response: string) => {
 
 const parseToInputDate = (sheetDate: string) => {
   if (!sheetDate) return '';
+  
+  // Already in YYYY-MM-DD format
+  if (sheetDate.includes('-')) {
+    const parts = sheetDate.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    }
+  }
+
   const parts = sheetDate.split('/');
   if (parts.length === 3) {
-    const d = parts[0].padStart(2, '0');
-    const m = parts[1].padStart(2, '0');
-    const y = parts[2];
+    // If first part is a year (e.g., 2026/07/17) -> YYYY/MM/DD
+    if (parts[0].length === 4) {
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    }
+    // If last part is a year (e.g., 17/07/2026) -> legacy DD/MM/YYYY
+    if (parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+
+  // Fallback: try to parse arbitrary strings like "17 Jul 2026" using Date API
+  const parsedDate = new Date(sheetDate);
+  if (!isNaN(parsedDate.getTime())) {
+    const y = parsedDate.getFullYear();
+    const m = String(parsedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(parsedDate.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
+
   return sheetDate;
 };
 
@@ -64,7 +87,7 @@ const formatToSheetDate = (inputDate: string) => {
   if (!inputDate) return '';
   const parts = inputDate.split('-');
   if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return `${parts[0]}/${parts[1]}/${parts[2]}`; // YYYY/MM/DD
   }
   return inputDate;
 };
@@ -489,8 +512,13 @@ const Research: React.FC = () => {
     if (!spreadsheetId || !accessToken) return;
     setIsAdding(true);
 
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+
     const newLead: ResearchData = {
-      date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY
+      date: `${y}/${m}/${d}`, // YYYY/MM/DD
       business_name: '',
       category: '',
       city: '',
