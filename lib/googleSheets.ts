@@ -381,7 +381,6 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${updateRange}?valueInputOption=USER_ENTERED`;
   const updateRes = await fetch(updateUrl, {
     method: 'PUT',
-    keepalive: true,
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       range: updateRange,
