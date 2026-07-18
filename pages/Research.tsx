@@ -114,48 +114,34 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
   const [data, setData] = useState(item);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Always read the latest data inside async callbacks without stale closures
+  // dataRef: latest draft (no stale closure issues in async callbacks)
   const dataRef = useRef(data);
+  // lastSavedRef: the last value confirmed written to Google Sheets.
+  // Used for change-detection so we never send a no-op write.
+  const lastSavedRef = useRef(item);
+  // Timer for debounced auto-save
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync from parent ONLY when the item identity changes (i.e., an explicit
-  // refetch happened — e.g., after an error revert, or on initial load).
-  // We do NOT call refetch after successful saves, so this won't clobber
-  // in-progress edits during normal operation.
+  // Sync from parent when item identity changes (explicit refetch / error revert).
   useEffect(() => {
     setData(item);
     dataRef.current = item;
+    lastSavedRef.current = item;
   }, [item]);
 
-  const handleChange = (field: keyof ResearchData, value: string) => {
-    const next = { ...dataRef.current, [field]: value };
-    dataRef.current = next;
-    setData(next);
-  };
+  // Cleanup debounce timer on unmount
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  }, []);
 
-  const handleBlur = (field: keyof ResearchData) => {
-    const latest = dataRef.current;
-    // Compare against the last-known server value (item[field])
-    if (latest[field] !== item[field]) {
-      syncToSheets(latest);
-    }
-  };
-
-  const handleSelectChange = (field: keyof ResearchData, value: string) => {
-    const next = { ...dataRef.current, [field]: value };
-    dataRef.current = next;
-    setData(next);
-    if (next[field] !== item[field]) {
-      syncToSheets(next);
-    }
-  };
-
+  // ── Core save function ────────────────────────────────────────────────────
   const syncToSheets = async (snapshot: ResearchData & { _rowIndex?: number }) => {
     setIsSyncing(true);
     try {
       await onUpdate(snapshot);
+      lastSavedRef.current = snapshot; // mark as saved
 
-      // ── Smart completion notification ────────────────────────────────────
-      // Fire once per row when ≥80% of the required fields are filled.
+      // Smart completion notification (≥80% fields filled, once per row)
       const rowIdx = snapshot._rowIndex ?? -1;
       if (rowIdx > 0 && !completedRowsRef.current.has(rowIdx)) {
         const filled = countFilledFields(snapshot);
@@ -173,6 +159,53 @@ const EditableRow = ({ item, onUpdate, completedRowsRef }: EditableRowProps) => 
       setIsSyncing(false);
     }
   };
+
+  // ── Schedule debounced save ───────────────────────────────────────────────
+  // Called on every onChange. Fires 800ms after the last keystroke so data
+  // is written to Google Sheets well before the user might close the app.
+  const scheduleSave = (next: ResearchData & { _rowIndex?: number }) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      const saved = lastSavedRef.current;
+      const hasChanges = (Object.keys(next) as (keyof typeof next)[]).some(
+        k => k !== '_rowIndex' && next[k] !== saved[k]
+      );
+      if (hasChanges) syncToSheets(next);
+    }, 800);
+  };
+
+  // ── Event handlers ────────────────────────────────────────────────────────
+  const handleChange = (field: keyof ResearchData, value: string) => {
+    const next = { ...dataRef.current, [field]: value };
+    dataRef.current = next;
+    setData(next);
+    scheduleSave(next); // auto-save 800ms after last change
+  };
+
+  const handleBlur = (field: keyof ResearchData) => {
+    // Flush the debounce immediately on blur (e.g. tab-away, nav click)
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const latest = dataRef.current;
+    if (latest[field] !== lastSavedRef.current[field]) {
+      syncToSheets(latest);
+    }
+  };
+
+  const handleSelectChange = (field: keyof ResearchData, value: string) => {
+    const next = { ...dataRef.current, [field]: value };
+    dataRef.current = next;
+    setData(next);
+    // Selects save immediately (no need to debounce a single-click action)
+    if (next[field] !== lastSavedRef.current[field]) {
+      syncToSheets(next);
+    }
+  };
+
+
 
   return (
     <tr className="hover:bg-gray-50/50 transition-colors group relative">
