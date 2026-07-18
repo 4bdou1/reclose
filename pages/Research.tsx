@@ -15,6 +15,10 @@ type ResearchSyncPayload = {
   reason: 'row-updated' | 'row-added';
   updatedAt: string;
 };
+type ResolvedSheetDate = {
+  inputDate: string;
+  sheetDate: string;
+};
 
 // All 10 fields that count toward "row completeness"
 const REQUIRED_FIELDS: (keyof ResearchData)[] = [
@@ -32,6 +36,7 @@ const REQUIRED_FIELDS: (keyof ResearchData)[] = [
 
 const COMPLETION_THRESHOLD = 0.8; // 80%
 const RESEARCH_SYNC_EVENT = 'research-sync';
+const RESEARCH_DATE_FIELDS: (keyof ResearchData)[] = ['date', 'follow-up_due'];
 
 const countFilledFields = (row: ResearchData): number =>
   REQUIRED_FIELDS.filter(f => {
@@ -97,10 +102,7 @@ const getResponseBadge = (response: string) => {
   }
 };
 
-const parseToInputDate = (sheetDate: string) => {
-  if (!sheetDate) return '';
-
-  const buildInputDate = (year: string, month: string, day: string) => {
+const buildResolvedSheetDate = (year: string, month: string, day: string): ResolvedSheetDate | null => {
     const numericYear = Number(year);
     const numericMonth = Number(month);
     const numericDay = Number(day);
@@ -117,46 +119,67 @@ const parseToInputDate = (sheetDate: string) => {
       return null;
     }
 
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  };
+    const paddedMonth = month.padStart(2, '0');
+    const paddedDay = day.padStart(2, '0');
+
+    return {
+      inputDate: `${year}-${paddedMonth}-${paddedDay}`,
+      sheetDate: `${year}/${paddedMonth}/${paddedDay}`,
+    };
+};
+
+const resolveSheetDate = (sheetDate: string, allowAmbiguous: boolean): ResolvedSheetDate | null => {
+  const trimmedValue = sheetDate.trim();
+  if (!trimmedValue) return null;
   
   // Already in YYYY-MM-DD format
-  if (sheetDate.includes('-')) {
-    const parts = sheetDate.split('-');
+  if (trimmedValue.includes('-')) {
+    const parts = trimmedValue.split('-');
     if (parts.length === 3 && parts[0].length === 4) {
-      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      return buildResolvedSheetDate(parts[0], parts[1], parts[2]);
     }
   }
 
-  const parts = sheetDate.split('/');
+  const parts = trimmedValue.split('/');
   if (parts.length === 3) {
     // If first part is a year (e.g., 2026/07/17) -> YYYY/MM/DD
     if (parts[0].length === 4) {
-      const isoDate = buildInputDate(parts[0], parts[1], parts[2]);
-      if (isoDate) return isoDate;
+      const resolvedDate = buildResolvedSheetDate(parts[0], parts[1], parts[2]);
+      if (resolvedDate) return resolvedDate;
     }
 
     // If last part is a year, support both DD/MM/YYYY and MM/DD/YYYY.
     if (parts[2].length === 4) {
-      const dmyDate = buildInputDate(parts[2], parts[1], parts[0]);
-      const mdyDate = buildInputDate(parts[2], parts[0], parts[1]);
+      const dmyDate = buildResolvedSheetDate(parts[2], parts[1], parts[0]);
+      const mdyDate = buildResolvedSheetDate(parts[2], parts[0], parts[1]);
 
       if (dmyDate && !mdyDate) return dmyDate;
       if (mdyDate && !dmyDate) return mdyDate;
-      if (dmyDate) return dmyDate;
+      if (allowAmbiguous && dmyDate) return dmyDate;
     }
   }
 
   // Fallback: try to parse arbitrary strings like "17 Jul 2026" using Date API
-  const parsedDate = new Date(sheetDate);
+  const parsedDate = new Date(trimmedValue);
   if (!isNaN(parsedDate.getTime())) {
     const y = parsedDate.getFullYear();
     const m = String(parsedDate.getMonth() + 1).padStart(2, '0');
     const d = String(parsedDate.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return {
+      inputDate: `${y}-${m}-${d}`,
+      sheetDate: `${y}/${m}/${d}`,
+    };
   }
 
-  return sheetDate;
+  return null;
+};
+
+const getSafeNormalizedSheetDate = (sheetDate: string) =>
+  resolveSheetDate(sheetDate, false)?.sheetDate ?? null;
+
+const parseToInputDate = (sheetDate: string) => {
+  if (!sheetDate) return '';
+  return resolveSheetDate(sheetDate, true)?.inputDate ?? sheetDate;
 };
 
 const formatToSheetDate = (inputDate: string) => {
@@ -518,6 +541,7 @@ const Research: React.FC = () => {
   const dirtyRowsRef = useRef<Set<number>>(new Set());
   const refreshInFlightRef = useRef(false);
   const queuedRefreshRef = useRef(false);
+  const normalizationInFlightRef = useRef(false);
   const researchChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const clientIdRef = useRef(
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -584,6 +608,62 @@ const Research: React.FC = () => {
     [spreadsheetId]
   );
 
+  const normalizeResearchSheetDates = useCallback(
+    async (rows: ResearchRow[]) => {
+      if (!spreadsheetId || !accessToken) return;
+      if (normalizationInFlightRef.current) return;
+
+      const rowsToNormalize = rows
+        .filter((row): row is ResearchRow & { _rowIndex: number } => typeof row._rowIndex === 'number')
+        .map(row => {
+          const normalizedFields = RESEARCH_DATE_FIELDS.reduce<Partial<ResearchData>>((acc, field) => {
+            const currentValue = row[field];
+            const normalizedValue = getSafeNormalizedSheetDate(currentValue);
+
+            if (normalizedValue && normalizedValue !== currentValue) {
+              acc[field] = normalizedValue;
+            }
+
+            return acc;
+          }, {});
+
+          return {
+            row,
+            normalizedFields,
+          };
+        })
+        .filter(({ normalizedFields }) => Object.keys(normalizedFields).length > 0);
+
+      if (rowsToNormalize.length === 0) return;
+
+      normalizationInFlightRef.current = true;
+      try {
+        for (const { row, normalizedFields } of rowsToNormalize) {
+          const updatedRow = { ...row, ...normalizedFields };
+          const rowData = { ...updatedRow };
+          delete rowData._rowIndex;
+
+          await googleSheetsAPI.updateResearch(
+            row._rowIndex,
+            rowData,
+            spreadsheetId,
+            accessToken
+          );
+        }
+
+        await requestResearchRefresh();
+        await publishResearchSync('row-updated');
+        toast.success(`Normalized ${rowsToNormalize.length} research date ${rowsToNormalize.length === 1 ? 'row' : 'rows'}.`);
+      } catch (error: any) {
+        console.error('Failed to normalize research dates:', error);
+        toast.error('Failed to normalize some research dates: ' + (error?.message || 'Unknown error'));
+      } finally {
+        normalizationInFlightRef.current = false;
+      }
+    },
+    [spreadsheetId, accessToken, publishResearchSync, requestResearchRefresh]
+  );
+
   useEffect(() => {
     if (!spreadsheetId) return;
 
@@ -608,6 +688,11 @@ const Research: React.FC = () => {
       void supabase.removeChannel(channel);
     };
   }, [spreadsheetId, requestResearchRefresh]);
+
+  useEffect(() => {
+    if (loading) return;
+    void normalizeResearchSheetDates(fetchedItems as ResearchRow[]);
+  }, [fetchedItems, loading, normalizeResearchSheetDates]);
 
   useEffect(() => {
     if (!spreadsheetId || !accessToken) return;
