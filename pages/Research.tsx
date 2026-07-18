@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Phone, MessageSquare, Mail, Loader2, Plus, CheckCircle } from 'lucide-react';
-import { googleSheetsAPI, Research as ResearchData } from '../lib/googleSheets';
+import { googleSheetsAPI, Research as ResearchData, setCache, invalidateCache } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { useAuth } from '../context/AuthContext';
@@ -346,6 +346,11 @@ const Research: React.FC = () => {
   // Tracks which rows have already shown the "completed" toast (by _rowIndex)
   const completedRowsRef = useRef<Set<number>>(new Set());
 
+  // Always-current pointer to the list — used inside handleUpdateRow without
+  // stale closure issues (the callback dep array stays stable).
+  const researchItemsRef = useRef(researchItems);
+  useEffect(() => { researchItemsRef.current = researchItems; }, [researchItems]);
+
   // ── Derived data ──────────────────────────────────────────────────────────
   const uniqueCategories = Array.from(
     new Set(researchItems.map(r => r.category).filter(Boolean))
@@ -379,6 +384,19 @@ const Research: React.FC = () => {
         return;
       }
 
+      // ── Optimistic update (local state + cache) ───────────────────────────
+      // Apply the change to BOTH local React state AND the in-memory apiCache
+      // BEFORE the async write. This means:
+      //   • The UI updates instantly with no lag.
+      //   • If the user navigates away and back before the write completes,
+      //     the remount refetch reads from the cache and gets our updated data
+      //     instead of racing the in-flight PUT request.
+      const updatedList = researchItemsRef.current.map(item =>
+        item._rowIndex === updatedData._rowIndex ? { ...updatedData } : item
+      );
+      setResearchItems(updatedList);
+      setCache('Research', updatedList);
+
       try {
         const rowData = { ...updatedData };
         delete rowData._rowIndex;
@@ -389,26 +407,18 @@ const Research: React.FC = () => {
           spreadsheetId,
           accessToken
         );
-
-        // ── Optimistic local update ────────────────────────────────────────
-        // Replace the matching row in local state so the parent list reflects
-        // the saved data. This avoids a full refetch that would reset every
-        // row's in-progress edits.
-        setResearchItems(prev =>
-          prev.map(item =>
-            item._rowIndex === updatedData._rowIndex ? { ...updatedData } : item
-          )
-        );
+        // Write confirmed — cache already reflects the correct data.
       } catch (error: any) {
         toast.error('Failed to sync: ' + error.message);
-        // On error, revert to server state — explicitly mark that the next
-        // fetchedItems update should be applied to local state.
+        // Clear the optimistic cache and revert to server state.
+        invalidateCache('Research');
         needsRefetchRef.current = true;
         refetch();
       }
     },
     [spreadsheetId, accessToken, refetch]
   );
+
 
   // ── Add new lead ──────────────────────────────────────────────────────────
   const handleAddLead = async () => {

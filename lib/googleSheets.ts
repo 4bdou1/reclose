@@ -110,6 +110,15 @@ export const invalidateCache = (sheetName?: string) => {
 };
 
 /**
+ * Optimistically write data into the in-memory cache so that a
+ * navigate-away / navigate-back reads our latest local state instead of
+ * racing against an in-flight write to Google Sheets.
+ */
+export const setCache = (sheetName: string, data: any[]) => {
+  apiCache[sheetName] = { data, timestamp: Date.now() };
+};
+
+/**
  * Fetch a specific sheet tab using the Google Sheets API v4.
  */
 export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, accessToken: string, headerRowIndex: number = 0): Promise<T[]> {
