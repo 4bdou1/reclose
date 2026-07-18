@@ -407,7 +407,10 @@ const Research: React.FC = () => {
           spreadsheetId,
           accessToken
         );
-        // Write confirmed — cache already reflects the correct data.
+        // updateRow() calls invalidateCache() internally after writing, which
+        // would wipe our optimistic cache. Re-apply it so navigate-back still
+        // reads our updated data and not a stale server response.
+        setCache('Research', updatedList);
       } catch (error: any) {
         toast.error('Failed to sync: ' + error.message);
         // Clear the optimistic cache and revert to server state.

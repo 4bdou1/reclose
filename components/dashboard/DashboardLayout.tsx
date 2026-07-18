@@ -89,10 +89,9 @@ const DashboardLayout: React.FC = () => {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 inset-x-0 z-50 bg-[#FFFFFF] border-t border-black/5 pb-safe">
-        <div className="flex items-center justify-around px-2 py-2 max-w-3xl mx-auto">
+        <div className="flex items-stretch justify-around max-w-3xl mx-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
-            // Exact match for home, startsWith for others to keep tab active on subpages
             const isActive = item.to === '/dashboard' 
               ? location.pathname === '/dashboard' 
               : location.pathname.startsWith(item.to);
@@ -101,10 +100,11 @@ const DashboardLayout: React.FC = () => {
               <NavLink 
                 key={item.to} 
                 to={item.to}
-                className="flex-1 flex flex-col items-center justify-center py-2"
+                style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                className="flex-1 flex flex-col items-center justify-center py-3 min-h-[52px] select-none"
               >
                 <Icon 
-                  className={`w-6 h-6 mb-1 ${isActive ? 'text-[#050505] fill-[#050505]/10' : 'text-gray-400'}`} 
+                  className={`w-6 h-6 mb-1 transition-colors ${isActive ? 'text-[#050505] fill-[#050505]/10' : 'text-gray-400'}`} 
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 <span 
@@ -117,6 +117,7 @@ const DashboardLayout: React.FC = () => {
           })}
         </div>
       </nav>
+
     </div>
   );
 };
