@@ -118,6 +118,8 @@ export const setCache = (sheetName: string, data: any[]) => {
   apiCache[sheetName] = { data, timestamp: Date.now() };
 };
 
+export const sheetHeaders: Record<string, string[]> = {};
+
 /**
  * Fetch a specific sheet tab using the Google Sheets API v4.
  */
@@ -141,6 +143,12 @@ export async function fetchSheet<T>(sheetName: string, spreadsheetId: string, ac
   }
 
   const data = await response.json();
+  
+  // Cache headers synchronously so updateRow doesn't have to await a network fetch
+  if (data.values && data.values.length > headerRowIndex) {
+    sheetHeaders[sheetName] = data.values[headerRowIndex] || [];
+  }
+
   const parsed = parseSheetData<T>(data.values || [], headerRowIndex);
   apiCache[sheetName] = { data: parsed, timestamp: Date.now() };
   return parsed;
@@ -325,19 +333,25 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   if (!spreadsheetId || !accessToken) throw new Error('Missing spreadsheet ID or access token');
 
   // Fetch headers to map the row correctly
-  const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}`;
-  const headerResponse = await fetch(headerUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+  let headers: string[] = sheetHeaders[sheetName] || [];
   
-  if (!headerResponse.ok) throw new Error(`Failed to fetch headers: ${await headerResponse.text()}`);
-  
-  const headerData = await headerResponse.json();
-  const headers: string[] = (headerData.values && headerData.values[0]) ? headerData.values[0] : [];
+  if (headers.length === 0) {
+    const headerUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}`;
+    const headerResponse = await fetch(headerUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+    
+    if (!headerResponse.ok) throw new Error(`Failed to fetch headers: ${await headerResponse.text()}`);
+    
+    const headerData = await headerResponse.json();
+    headers = (headerData.values && headerData.values[0]) ? headerData.values[0] : [];
+    sheetHeaders[sheetName] = headers;
+  }
 
   if (headers.length === 0) throw new Error(`No headers found in sheet ${sheetName}.`);
 
   // Check if we need to add "Completed At"
   if (rowData.completed_at && !headers.map(h => h.toLowerCase()).includes('completed at')) {
     headers.push('Completed At');
+    sheetHeaders[sheetName] = headers; // update cache
     // Update the header row
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${headerRowIndex + 1}:${headerRowIndex + 1}?valueInputOption=USER_ENTERED`, {
       method: 'PUT',
