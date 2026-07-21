@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Phone, MessageSquare, Mail, Loader2, Plus, CheckCircle } from 'lucide-react';
+import { Search, Phone, MessageSquare, Mail, Loader2, Plus, CheckCircle, Upload, X, AlertCircle, ImageIcon, Sparkles, Trash2 } from 'lucide-react';
 import { googleSheetsAPI, Research as ResearchData, setCache, invalidateCache } from '../lib/googleSheets';
 import { useSheetsData } from '../hooks/useSheetsData';
 import { useGoogleAuth } from '../context/GoogleAuthContext';
 import { useAuth } from '../context/AuthContext';
 import { logDashboardActivity, supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { parseLeadsFromImages } from '../lib/parseLeadsFromImages';
 
 type ResearchRow = ResearchData & { _rowIndex?: number };
 type ResearchSyncPayload = {
@@ -499,6 +500,400 @@ const EditableRow = ({ item, onUpdate, onDirtyChange, completedRowsRef }: Editab
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SmartImportModal
+// ─────────────────────────────────────────────────────────────────────────────
+interface SmartImportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onImport: (rows: Partial<ResearchData>[]) => Promise<void>;
+  todaySheetDate: string;
+}
+
+const SmartImportModal = ({ isOpen, onClose, onImport, todaySheetDate }: SmartImportModalProps) => {
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [parsedRows, setParsedRows] = useState<Partial<ResearchData>[]>([]);
+  const [checkedRows, setCheckedRows] = useState<boolean[]>([]);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState<{ pct: number; detail: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset on close
+  useEffect(() => {
+    if (!isOpen) {
+      setImages([]);
+      setPreviews([]);
+      setIsParsing(false);
+      setIsImporting(false);
+      setParsedRows([]);
+      setCheckedRows([]);
+      setParseError(null);
+      setOcrProgress(null);
+    }
+  }, [isOpen]);
+
+  const addFiles = (files: FileList | File[]) => {
+    const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (valid.length === 0) return;
+    setImages(prev => [...prev, ...valid]);
+    valid.forEach(file => {
+      const url = URL.createObjectURL(file);
+      setPreviews(prev => [...prev, url]);
+    });
+    setParsedRows([]);
+    setCheckedRows([]);
+    setParseError(null);
+  };
+
+  const removeImage = (idx: number) => {
+    URL.revokeObjectURL(previews[idx]);
+    setImages(prev => prev.filter((_, i) => i !== idx));
+    setPreviews(prev => prev.filter((_, i) => i !== idx));
+    setParsedRows([]);
+    setCheckedRows([]);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    addFiles(e.dataTransfer.files);
+  };
+
+  const handleAnalyze = async () => {
+    if (images.length === 0) return;
+    setIsParsing(true);
+    setParseError(null);
+    setOcrProgress({ pct: 0, detail: 'Starting OCR…' });
+    try {
+      const rows = await parseLeadsFromImages(images, todaySheetDate, (pct, detail) => {
+        setOcrProgress({ pct, detail });
+      });
+      setOcrProgress({ pct: 100, detail: 'Done!' });
+      if (rows.length === 0) {
+        setParseError('No leads were found in the image(s). Make sure the image contains a numbered list of businesses.');
+      } else {
+        setParsedRows(rows);
+        setCheckedRows(new Array(rows.length).fill(true));
+      }
+    } catch (err: any) {
+      setParseError(err?.message ?? 'Unknown error occurred.');
+    } finally {
+      setIsParsing(false);
+      setOcrProgress(null);
+    }
+  };
+
+  const handleRowChange = (idx: number, field: keyof ResearchData, value: string) => {
+    setParsedRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+  };
+
+  const handleConfirm = async () => {
+    const toImport = parsedRows.filter((_, i) => checkedRows[i]);
+    if (toImport.length === 0) {
+      toast.error('Please select at least one lead to import.');
+      return;
+    }
+    setIsImporting(true);
+    try {
+      await onImport(toImport);
+      onClose();
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const selectedCount = checkedRows.filter(Boolean).length;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-900 to-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-white">Smart Import</h2>
+              <p className="text-xs text-gray-300">Upload images — OCR reads your leads automatically, no API needed</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {/* Step 1: Upload zone */}
+          {parsedRows.length === 0 && (
+            <div className="p-6 space-y-4">
+              {/* Drop zone */}
+              <div
+                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                  isDragging
+                    ? 'border-black bg-gray-50 scale-[1.01]'
+                    : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50/50'
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={e => e.target.files && addFiles(e.target.files)}
+                />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Drop images here or click to browse</p>
+                    <p className="text-xs text-gray-400 mt-1">PNG, JPG, HEIC — multiple images supported</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Thumbnail strip */}
+              {images.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {previews.map((src, i) => (
+                    <div key={i} className="relative group">
+                      <img
+                        src={src}
+                        alt={`img-${i}`}
+                        className="w-24 h-28 object-cover rounded-xl border border-gray-200 shadow-sm"
+                      />
+                      <button
+                        onClick={() => removeImage(i)}
+                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-24 h-28 rounded-xl border-2 border-dashed border-gray-200 hover:border-gray-400 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Progress bar (shown while OCR is running) */}
+              {isParsing && ocrProgress && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{ocrProgress.detail}</span>
+                    <span>{ocrProgress.pct}%</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gray-900 rounded-full transition-all duration-300"
+                      style={{ width: `${ocrProgress.pct}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {parseError && (
+                <div className="flex items-start gap-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                  <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                  <p className="text-sm text-red-700">{parseError}</p>
+                </div>
+              )}
+
+              {/* Analyze button */}
+              <button
+                onClick={handleAnalyze}
+                disabled={images.length === 0 || isParsing}
+                className="w-full py-3 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {isParsing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Reading image{images.length > 1 ? 's' : ''} with OCR…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    {images.length === 0 ? 'Upload images first' : `Extract leads from ${images.length} image${images.length > 1 ? 's' : ''}`}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Preview table */}
+          {parsedRows.length > 0 && (
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {parsedRows.length} lead{parsedRows.length > 1 ? 's' : ''} extracted
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">Edit any cell before importing. Uncheck rows to skip them.</p>
+                </div>
+                <button
+                  onClick={() => { setParsedRows([]); setCheckedRows([]); setParseError(null); }}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-black transition-colors"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  Re-upload
+                </button>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
+                <table className="w-full text-left text-xs border-collapse min-w-[900px]">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="p-2 w-8"></th>
+                      <th className="p-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider w-[130px]">Business Name</th>
+                      <th className="p-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider w-[90px]">Category</th>
+                      <th className="p-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider w-[70px]">Contact</th>
+                      <th className="p-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider w-[100px]">Response</th>
+                      <th className="p-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">30s Note</th>
+                      <th className="p-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Phone / Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {parsedRows.map((row, i) => (
+                      <tr
+                        key={i}
+                        className={`border-b border-gray-100 transition-colors ${
+                          checkedRows[i] ? 'bg-white hover:bg-gray-50/50' : 'bg-gray-50 opacity-50'
+                        }`}
+                      >
+                        <td className="p-2">
+                          <input
+                            type="checkbox"
+                            checked={checkedRows[i] ?? false}
+                            onChange={e => setCheckedRows(prev => prev.map((v, j) => j === i ? e.target.checked : v))}
+                            className="w-3.5 h-3.5 accent-black cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-1">
+                          <input
+                            type="text"
+                            value={row.business_name ?? ''}
+                            onChange={e => handleRowChange(i, 'business_name', e.target.value)}
+                            className="w-full bg-transparent font-semibold text-gray-900 focus:bg-white focus:ring-1 focus:ring-black rounded px-1.5 py-1 outline-none"
+                          />
+                        </td>
+                        <td className="p-1">
+                          <input
+                            type="text"
+                            value={row.category ?? ''}
+                            onChange={e => handleRowChange(i, 'category', e.target.value)}
+                            className="w-full bg-transparent text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1.5 py-1 outline-none"
+                          />
+                        </td>
+                        <td className="p-1">
+                          <select
+                            value={row.contact_method ?? ''}
+                            onChange={e => handleRowChange(i, 'contact_method', e.target.value)}
+                            className="w-full bg-transparent text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1 py-1 outline-none cursor-pointer"
+                          >
+                            <option value="">—</option>
+                            <option value="Call">Call</option>
+                            <option value="DM">DM</option>
+                            <option value="Email">Email</option>
+                          </select>
+                        </td>
+                        <td className="p-1">
+                          <select
+                            value={row.response ?? ''}
+                            onChange={e => handleRowChange(i, 'response', e.target.value)}
+                            className={`w-full text-[10px] font-bold uppercase tracking-wider rounded px-1 py-1 outline-none cursor-pointer ${
+                              row.response ? getResponseBadge(row.response) : 'bg-transparent text-gray-500'
+                            }`}
+                          >
+                            <option value="">No Status</option>
+                            <option value="No Answer">No Answer</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Positive">Positive</option>
+                            <option value="Negative">Negative</option>
+                          </select>
+                        </td>
+                        <td className="p-1">
+                          <input
+                            type="text"
+                            value={row['researched_detail_(30s_note)'] ?? ''}
+                            onChange={e => handleRowChange(i, 'researched_detail_(30s_note)', e.target.value)}
+                            className="w-full bg-transparent text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1.5 py-1 outline-none"
+                          />
+                        </td>
+                        <td className="p-1">
+                          <input
+                            type="text"
+                            value={row['outcome_/_notes'] ?? ''}
+                            onChange={e => handleRowChange(i, 'outcome_/_notes', e.target.value)}
+                            className="w-full bg-transparent text-gray-600 focus:bg-white focus:ring-1 focus:ring-black rounded px-1.5 py-1 outline-none"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {parsedRows.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-500">
+              {selectedCount} of {parsedRows.length} lead{parsedRows.length > 1 ? 's' : ''} selected
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={isImporting || selectedCount === 0}
+                className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {isImporting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</>
+                ) : (
+                  <><CheckCircle className="w-4 h-4" /> Import {selectedCount} Lead{selectedCount !== 1 ? 's' : ''}</>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Research Page
 // ─────────────────────────────────────────────────────────────────────────────
 const Research: React.FC = () => {
@@ -509,6 +904,7 @@ const Research: React.FC = () => {
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   // ── Local list state ──────────────────────────────────────────────────────
   // We manage a local copy of the list so successful saves can be applied
@@ -831,6 +1227,58 @@ const Research: React.FC = () => {
     }
   };
 
+  // ── Smart Import handler ──────────────────────────────────────────────────
+  const handleSmartImport = async (rows: Partial<ResearchData>[]) => {
+    if (!spreadsheetId || !accessToken) {
+      toast.error('Google Sheets not connected.');
+      return;
+    }
+    let successCount = 0;
+    for (const row of rows) {
+      try {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const fullRow: ResearchData = {
+          date: row.date || `${y}/${m}/${d}`,
+          business_name: row.business_name || '',
+          category: row.category || '',
+          city: row.city || '',
+          contact_method: row.contact_method || '',
+          time_of_contact: row.time_of_contact || '',
+          'researched_detail_(30s_note)': row['researched_detail_(30s_note)'] || '',
+          response: row.response || '',
+          'follow-up_due': row['follow-up_due'] || '',
+          'follow-up_sent?': row['follow-up_sent?'] || '',
+          'outcome_/_notes': row['outcome_/_notes'] || '',
+        };
+        await googleSheetsAPI.addResearch(fullRow, spreadsheetId, accessToken);
+        successCount++;
+      } catch (err: any) {
+        toast.error(`Failed to import "${row.business_name || 'row'}": ${err?.message}`);
+      }
+    }
+    if (successCount > 0) {
+      toast.success(`✨ Imported ${successCount} lead${successCount > 1 ? 's' : ''} successfully!`, {
+        style: { background: '#D6B36B', color: '#000', border: 'none' },
+      });
+      const ownerName = user?.user_metadata?.full_name || user?.email || 'Unknown User';
+      await logDashboardActivity(ownerName, 'Smart Import', `Imported ${successCount} leads from image(s)`);
+      await requestResearchRefresh();
+      await publishResearchSync('row-added');
+    }
+  };
+
+  // ── Today's date in sheet format (YYYY/MM/DD) ─────────────────────────────
+  const todaySheetDate = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}/${m}/${d}`;
+  })();
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -904,7 +1352,7 @@ const Research: React.FC = () => {
             </tbody>
           </table>
 
-          <div className="p-4 border-t border-gray-100 bg-gray-50">
+          <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center gap-3">
             <button
               onClick={handleAddLead}
               disabled={isAdding}
@@ -913,9 +1361,24 @@ const Research: React.FC = () => {
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {isAdding ? 'Adding Lead...' : 'Add New Lead'}
             </button>
+
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              Smart Import
+            </button>
           </div>
         </div>
       )}
+
+      <SmartImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImport={handleSmartImport}
+        todaySheetDate={todaySheetDate}
+      />
     </div>
   );
 };
