@@ -1190,6 +1190,19 @@ const Research: React.FC = () => {
   // ── Add new lead ──────────────────────────────────────────────────────────
   const handleAddLead = async () => {
     if (!spreadsheetId || !accessToken) return;
+
+    // Guard: if there's already a completely blank row, don't add another one.
+    // A row is considered blank when every meaningful field is empty.
+    const MEANINGFUL_FIELDS: (keyof ResearchData)[] = [
+      'business_name', 'category', 'city', 'contact_method',
+      'time_of_contact', 'researched_detail_(30s_note)',
+      'response', 'follow-up_due', 'follow-up_sent?', 'outcome_/_notes',
+    ];
+    const hasBlankRow = researchItemsRef.current.some(item =>
+      MEANINGFUL_FIELDS.every(f => !String(item[f] ?? '').trim())
+    );
+    if (hasBlankRow) return; // silently stay — blank row already exists
+
     setIsAdding(true);
 
     const now = new Date();

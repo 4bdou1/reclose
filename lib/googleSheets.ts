@@ -127,6 +127,18 @@ export const sheetHeaders: Record<string, string[]> = {};
 
 const normalizeHeaderKey = (header: string) => header.toLowerCase().trim().replace(/ /g, '_');
 
+/**
+ * Prevent Google Sheets from interpreting cell values as formulas.
+ * A leading +, -, =, or @ triggers formula mode in Sheets when using
+ * valueInputOption=USER_ENTERED. Prefix with a single apostrophe to
+ * force the value to be treated as plain text.
+ */
+const sanitizeSheetValue = (value: any): any => {
+  if (typeof value !== 'string') return value;
+  if (value !== '' && /^[=+\-@]/.test(value)) return `'${value}`;
+  return value;
+};
+
 const columnIndexToLetter = (index: number) => {
   let columnIndex = index;
   let result = '';
@@ -336,7 +348,7 @@ export async function appendRow(sheetName: string, rowData: Record<string, any>,
   const orderedRow = headers.map(header => {
     if (!header.trim()) return '';
     const key = header.toLowerCase().trim().replace(/ /g, '_');
-    return rowData[key] !== undefined ? rowData[key] : '';
+    return sanitizeSheetValue(rowData[key] !== undefined ? rowData[key] : '');
   });
 
   // Only send data starting from the first actual column so Google Sheets doesn't scan an empty Column A and insert at Row 1
@@ -398,7 +410,7 @@ export async function updateRow(sheetName: string, rowIndex: number, rowData: Re
   const orderedRow = headers.map(header => {
     if (!header.trim()) return '';
     const key = normalizeHeaderKey(header);
-    return rowData[key] !== undefined ? rowData[key] : '';
+    return sanitizeSheetValue(rowData[key] !== undefined ? rowData[key] : '');
   });
 
   const slicedRow = orderedRow.slice(startColIndex);
@@ -448,7 +460,7 @@ export async function batchUpdateRows(
     const orderedRow = headers.map(header => {
       if (!header.trim()) return '';
       const key = normalizeHeaderKey(header);
-      return rowData[key] !== undefined ? rowData[key] : '';
+      return sanitizeSheetValue(rowData[key] !== undefined ? rowData[key] : '');
     });
 
     const slicedRow = orderedRow.slice(startColIndex);
