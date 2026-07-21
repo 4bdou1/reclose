@@ -37,7 +37,6 @@ const REQUIRED_FIELDS: (keyof ResearchData)[] = [
 
 const COMPLETION_THRESHOLD = 0.8; // 80%
 const RESEARCH_SYNC_EVENT = 'research-sync';
-const RESEARCH_DATE_FIELDS: (keyof ResearchData)[] = ['date', 'follow-up_due'];
 
 const countFilledFields = (row: ResearchData): number =>
   REQUIRED_FIELDS.filter(f => {
@@ -932,12 +931,10 @@ const Research: React.FC = () => {
     });
   }, [fetchedItems, loading]);
 
-  // Tracks which rows have already shown the "completed" toast (by _rowIndex)
   const completedRowsRef = useRef<Set<number>>(new Set());
   const dirtyRowsRef = useRef<Set<number>>(new Set());
   const refreshInFlightRef = useRef(false);
   const queuedRefreshRef = useRef(false);
-  const normalizationInFlightRef = useRef(false);
   const researchChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const clientIdRef = useRef(
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -1004,63 +1001,7 @@ const Research: React.FC = () => {
     [spreadsheetId]
   );
 
-  const normalizeResearchSheetDates = useCallback(
-    async (rows: ResearchRow[]) => {
-      if (!spreadsheetId || !accessToken) return;
-      if (normalizationInFlightRef.current) return;
 
-      const rowsToNormalize = rows
-        .filter((row): row is ResearchRow & { _rowIndex: number } => typeof row._rowIndex === 'number')
-        .map(row => {
-          const normalizedFields = RESEARCH_DATE_FIELDS.reduce<Partial<ResearchData>>((acc, field) => {
-            const currentValue = row[field];
-            const normalizedValue = getSafeNormalizedSheetDate(currentValue);
-
-            if (normalizedValue && normalizedValue !== currentValue) {
-              acc[field] = normalizedValue;
-            }
-
-            return acc;
-          }, {});
-
-          return {
-            row,
-            normalizedFields,
-          };
-        })
-        .filter(({ normalizedFields }) => Object.keys(normalizedFields).length > 0);
-
-      if (rowsToNormalize.length === 0) return;
-
-      normalizationInFlightRef.current = true;
-      try {
-        await googleSheetsAPI.batchUpdateResearch(
-          rowsToNormalize.map(({ row, normalizedFields }) => {
-            const updatedRow = { ...row, ...normalizedFields };
-            const rowData = { ...updatedRow };
-            delete rowData._rowIndex;
-
-            return {
-              rowIndex: row._rowIndex,
-              rowData,
-            };
-          }),
-          spreadsheetId,
-          accessToken
-        );
-
-        await requestResearchRefresh();
-        await publishResearchSync('row-updated');
-        toast.success(`Normalized ${rowsToNormalize.length} research date ${rowsToNormalize.length === 1 ? 'row' : 'rows'}.`);
-      } catch (error: any) {
-        console.error('Failed to normalize research dates:', error);
-        toast.error('Failed to normalize some research dates: ' + (error?.message || 'Unknown error'));
-      } finally {
-        normalizationInFlightRef.current = false;
-      }
-    },
-    [spreadsheetId, accessToken, publishResearchSync, requestResearchRefresh]
-  );
 
   useEffect(() => {
     if (!spreadsheetId) return;
@@ -1087,10 +1028,6 @@ const Research: React.FC = () => {
     };
   }, [spreadsheetId, requestResearchRefresh]);
 
-  useEffect(() => {
-    if (loading) return;
-    void normalizeResearchSheetDates(fetchedItems as ResearchRow[]);
-  }, [fetchedItems, loading, normalizeResearchSheetDates]);
 
   useEffect(() => {
     if (!spreadsheetId || !accessToken) return;
@@ -1129,8 +1066,11 @@ const Research: React.FC = () => {
     const cityMatch = item.city?.toLowerCase()?.includes(searchLower) ?? false;
     const matchesSearch = searchTerm === '' || businessMatch || cityMatch;
 
-    // Filter out fully-empty rows at the bottom of the spreadsheet
-    const isNotEmpty = !!(item.business_name || item.date || item.city || item.contact_method);
+    // Filter out rows that have no business name — these are ghost/blank rows
+    // (e.g. date-only rows created by handleAddLead that were never filled in).
+    // We intentionally require business_name specifically so that a row the user
+    // is actively typing into (which auto-saves) doesn't flicker out mid-edit.
+    const isNotEmpty = !!item.business_name?.trim();
 
     return matchesTab && matchesSearch && isNotEmpty;
   });
